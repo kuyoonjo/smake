@@ -1,7 +1,7 @@
-import { cyan, grey, magenta, yellow } from 'colors/safe';
-import { existsSync, mkdirSync, rmSync } from 'fs';
-import { dirname, join } from 'path';
-import { Log } from '../Log';
+import { execSync } from 'child_process';
+import { magenta } from 'colors/safe';
+import { mkdirSync, rmSync, writeFileSync } from 'fs';
+import { join } from 'path';
 import { ICommand, Toolchain } from '../Toolchain';
 
 export abstract class LLVM extends Toolchain {
@@ -41,6 +41,12 @@ export abstract class LLVM extends Toolchain {
     return [this.buildDir];
   }
   get libs(): Array<string | LLVM> {
+    return [];
+  }
+  get cflags(): string[] {
+    return [];
+  }
+  get cxxflags(): string[] {
     return [];
   }
   get cxflags(): string[] {
@@ -112,6 +118,10 @@ export abstract class LLVM extends Toolchain {
     return join(this.buildDir, this.outputFilename);
   }
 
+  get ninjaFilePath() {
+    return join(this.buildDir, this.constructor.name + '.ninja');
+  }
+
   isCFile(f: string) {
     return f.endsWith('.c');
   }
@@ -125,117 +135,155 @@ export abstract class LLVM extends Toolchain {
     );
   }
 
-  buildUnknownFile(f: string) {
-    Log.e('Unknown file type', yellow(f));
-    process.exit(0);
-  }
-
-  generateCommands(): ICommand[] {
-    Log.i(cyan('Prepare'), this.name);
-    const { cmds, outs } = this.buildObjs();
+  async generateCommands(): Promise<ICommand[]> {
+    const { cmd, outs } = await this.buildObjs();
+    const content = [
+      await this.buildCCRules(),
+      await this.buildCXXRules(),
+      cmd,
+    ];
     switch (this.type) {
       case 'executable':
-        cmds.push({
-          label: magenta('Linking executable'),
-          cmd: this.buildExecutable(outs, this.outputPath),
-        });
+        content.push(await this.buildExecutable(outs, this.outputPath));
         break;
       case 'shared':
-        cmds.push({
-          label: magenta('Linking shared library'),
-          cmd: this.buildShared(outs, this.outputPath),
-        });
+        content.push(await this.buildShared(outs, this.outputPath));
         break;
       case 'static':
-        cmds.push({
-          label: magenta('Linking static library'),
-          cmd: this.buildStatic(outs, this.outputPath),
-        });
+        content.push(await this.buildStatic(outs, this.outputPath));
         break;
     }
-    return cmds;
+
+    content.push('');
+    return [
+      {
+        label: magenta(`Generating build.ninja for ${this.name}`),
+        cmd: '',
+        fn: async () => {
+          mkdirSync(this.buildDir, { recursive: true });
+          writeFileSync(this.ninjaFilePath, content.join('\n'));
+        },
+      },
+      {
+        label: magenta(`Building ${this.name}`),
+        cmd: '',
+        fn: async () => {
+          if (process.argv.includes('--verbose'))
+            execSync(`ninja -f ${this.ninjaFilePath} --verbose`, {
+              stdio: 'inherit',
+            });
+          else
+            execSync(`ninja -f ${this.ninjaFilePath}`, {
+              stdio: 'ignore',
+            });
+        },
+      },
+    ];
   }
 
-  buildObjCmd(compiler: string, srcFile: string, distFile: string) {
-    return [
-      compiler,
-      '-c',
+  async buildCCRules() {
+    let compiler = this.prefix + this.cc;
+    if (this.target) compiler += ` -target ${this.target}`;
+    const flags = [
       ...this.sysIncludedirs.map((x) => `-isystem ${x}`),
       ...this.includedirs.map((x) => `-I${x}`),
+      ...this.cflags,
       ...this.cxflags,
-      '-o ' + distFile,
-      srcFile,
     ].join(' ');
+    return [
+      `rule ${this.constructor.name}_CC`,
+      '  depfile = $out.d',
+      `  command = ${compiler} -MD -MF $out.d ${flags} -c $in -o $out`,
+    ].join('\n');
   }
 
-  buildObjs() {
-    const cmds: ICommand[] = [];
-    const outs: string[] = [];
-    for (const f of this.files) {
-      let compiler = '';
-      if (this.isCFile(f)) compiler = this.prefix + this.cc;
-      else if (this.isCXXFile(f)) compiler = this.prefix + this.cxx;
-      else this.buildUnknownFile(f);
+  async buildCXXRules() {
+    let compiler = this.prefix + this.cxx;
+    if (this.target) compiler += ` -target ${this.target}`;
+    const flags = [
+      ...this.sysIncludedirs.map((x) => `-isystem ${x}`),
+      ...this.includedirs.map((x) => `-I${x}`),
+      ...this.cxxflags,
+      ...this.cxflags,
+    ].join(' ');
 
-      if (this.target) compiler += ` -target ${this.target}`;
-
-      const out = join(
-        this.buildDir,
-        this.cacheDirname,
-        this.objOutDirname,
-        f + this.objOutSuffix
-      );
-      outs.push(out);
-      const outDir = dirname(out);
-      if (!existsSync(outDir)) mkdirSync(outDir, { recursive: true });
-      const cmd = this.buildObjCmd(compiler, f, out);
-      cmds.push({
-        label: grey(`Compiling ${f}`),
-        cmd,
-      });
-    }
-    return { cmds, outs };
+    return [
+      `rule ${this.constructor.name}_CXX`,
+      '  depfile = $out.d',
+      `  command = ${compiler} -MD -MF $out.d ${flags} -c $in -o $out`,
+    ].join('\n');
   }
 
-  buildExecutable(objFiles: string[], distFile: string) {
+  async buildObjs() {
+    const outDir = join(this.buildDir, this.cacheDirname, this.objOutDirname);
+
+    const res = this.files.map((f) => {
+      const out = join(outDir, f + this.objOutSuffix);
+      return {
+        cmd: `build ${out}: ${this.constructor.name}_${
+          this.isCFile(f) ? 'CC' : 'CXX'
+        } ${f}`,
+        out,
+      };
+    });
+    const cmd = res.map((x) => x.cmd).join('\n');
+    const outs = res.map((x) => x.out);
+    return { cmd, outs };
+  }
+
+  async buildExecutable(objFiles: string[], distFile: string) {
     const linker = this.prefix + this.ld;
     return [
-      linker,
-      ...this.linkdirs.map((x) => `-L${x}`),
-      ...this.libs.map(
-        (x: any) =>
-          `-l${typeof x === 'string' ? x : new x().outputFileBasename}`
-      ),
-      ...this.ldflags,
-      '-o ' + distFile,
-      ...objFiles,
-    ].join(' ');
+      `rule ${this.constructor.name}_LD`,
+      `  command = ${[
+        linker,
+        ...this.linkdirs.map((x) => `-L${x}`),
+        ...this.libs.map(
+          (x: any) =>
+            `-l${typeof x === 'string' ? x : new x().outputFileBasename}`
+        ),
+        ...this.ldflags,
+      ].join(' ')} $in -o $out`,
+      '',
+      `build ${distFile}: ${this.constructor.name}_LD ${objFiles.join(' ')}`,
+    ].join('\n');
   }
 
-  buildShared(objFiles: string[], distFile: string) {
+  async buildShared(objFiles: string[], distFile: string) {
     const linker = this.prefix + this.sh;
     return [
-      linker,
-      ...this.linkdirs.map((x) => `-L${x}`),
-      ...this.libs.map(
-        (x: any) =>
-          `-l${typeof x === 'string' ? x : new x().outputFileBasename}`
-      ),
-      ...this.shflags,
-      '-o ' + distFile,
-      ...objFiles,
-      '-shared',
-    ].join(' ');
+      `rule ${this.constructor.name}_SH`,
+      `  command = ${[
+        linker,
+        ...this.linkdirs.map((x) => `-L${x}`),
+        ...this.libs.map(
+          (x: any) =>
+            `-l${typeof x === 'string' ? x : new x().outputFileBasename}`
+        ),
+        ...this.shflags,
+        '-shared',
+      ].join(' ')} $in -o $out`,
+      '',
+      `build ${distFile}: ${this.constructor.name}_SH ${objFiles.join(' ')}`,
+    ].join('\n');
   }
 
-  buildStatic(objFiles: string[], distFile: string) {
+  async buildStatic(objFiles: string[], distFile: string) {
     const linker = this.prefix + this.ar;
-    return [linker, ...this.arflags, 'cr ' + distFile, ...objFiles].join(' ');
+    return [
+      `rule ${this.constructor.name}_SH`,
+      `  command = ${[linker, ...this.arflags].join(' ')} cr $out $in`,
+      '',
+      `build ${distFile}: ${this.constructor.name}_SH ${objFiles.join(' ')}`,
+    ].join('\n');
   }
 
-  clean() {
-    super.clean();
-    rmSync(join(this.outputPath), {
+  async clean() {
+    await super.clean();
+    rmSync(this.outputPath, {
+      force: true,
+    });
+    rmSync(this.ninjaFilePath, {
       force: true,
     });
   }

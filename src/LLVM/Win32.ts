@@ -1,3 +1,5 @@
+import { rmSync } from 'fs';
+import { join } from 'path';
 import { LLVM } from './LLVM';
 
 export abstract class LLVM_Win32 extends LLVM {
@@ -85,5 +87,19 @@ export abstract class LLVM_Win32 extends LLVM {
   }
   get staticOutSuffix() {
     return '.lib';
+  }
+
+  async clean() {
+    await super.clean();
+    if (this.type === 'shared')
+      rmSync(
+        join(
+          this.buildDir,
+          this.sharedOutPrefix + this.outputFileBasename + '.lib'
+        ),
+        {
+          force: true,
+        }
+      );
   }
 }

@@ -6,14 +6,23 @@ import { ICommand, Toolchain } from './Toolchain';
 const yellow = colors.yellow;
 const brightGreen = (colors as any).brightGreen as (str: string) => string;
 
-export function run(targets: Array<{ new (): Toolchain }>, args: string[]) {
+export async function run(
+  targets: Array<{ new (): Toolchain }>,
+  args: string[]
+) {
   const fn: 'build' | 'clean' = (args[0] as any) || 'build';
   switch (fn) {
     case 'build':
-      build(targets, args.slice(1));
+      await build(
+        targets,
+        args.slice(1).filter((x) => !x.startsWith('-'))
+      );
       break;
     case 'clean':
-      clean(targets, args.slice(1));
+      await clean(
+        targets,
+        args.slice(1).filter((x) => !x.startsWith('-'))
+      );
       break;
     default:
       Log.e('Unknown command', yellow(fn));
@@ -21,7 +30,7 @@ export function run(targets: Array<{ new (): Toolchain }>, args: string[]) {
   }
 }
 
-function build(targets: Array<{ new (): Toolchain }>, args: string[]) {
+async function build(targets: Array<{ new (): Toolchain }>, args: string[]) {
   const cmds: ICommand[] = [];
   const names = targets.map((t) => t.constructor.name);
   for (const arg of args) {
@@ -36,26 +45,30 @@ function build(targets: Array<{ new (): Toolchain }>, args: string[]) {
   });
   for (const Class of classes) {
     const obj = new Class();
-    const ms = obj.generateCommands();
+    const ms = await obj.generateCommands();
     cmds.splice(cmds.length, 0, ...ms);
   }
 
   let i = 0;
   for (const c of cmds) {
-    ++i;
     Log.i(
       brightGreen(
         '[' + ((i / cmds.length) * 100).toFixed(0).padStart(3, ' ') + '%]'
       ),
-      c.label,
-      '\n',
-      c.cmd
+      c.label
     );
-    execSync(c.cmd, { stdio: 'inherit' });
+    if (c.fn) await c.fn();
+    else {
+      console.log(c.cmd);
+      execSync(c.cmd, { stdio: 'inherit' });
+    }
+    ++i;
   }
+
+  Log.i(brightGreen('[100%]'), colors.magenta('Done'));
 }
 
-function clean(targets: Array<{ new (): Toolchain }>, args: string[]) {
+async function clean(targets: Array<{ new (): Toolchain }>, args: string[]) {
   const names = targets.map((t) => t.constructor.name);
   for (const arg of args) {
     if (!names.includes(arg)) {
@@ -69,6 +82,6 @@ function clean(targets: Array<{ new (): Toolchain }>, args: string[]) {
   });
   for (const Class of classes) {
     const obj = new Class();
-    obj.clean();
+    await obj.clean();
   }
 }

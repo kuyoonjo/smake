@@ -6,6 +6,7 @@ const BUILD_DIR = '.smake';
 export interface ICommand {
   label: string;
   cmd: string;
+  fn?: () => Promise<void>;
 }
 
 export abstract class Toolchain {
@@ -16,9 +17,9 @@ export abstract class Toolchain {
     return '.' + this.constructor.name;
   }
 
-  abstract generateCommands(): ICommand[];
+  abstract generateCommands(): Promise<ICommand[]>;
 
-  clean() {
+  async clean() {
     rmSync(join(this.buildDir, this.cacheDirname), {
       recursive: true,
       force: true,
