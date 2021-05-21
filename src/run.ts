@@ -57,10 +57,15 @@ async function build(targets: Array<{ new (): Toolchain }>, args: string[]) {
       ),
       c.label
     );
-    if (c.fn) await c.fn();
-    else {
-      console.log(c.cmd);
-      execSync(c.cmd, { stdio: 'inherit' });
+    try {
+      if (c.fn) await c.fn();
+      else {
+        console.log(c.cmd);
+        execSync(c.cmd, { stdio: 'inherit' });
+      }
+    } catch (e) {
+      e && Log.e(e);
+      process.exit(1);
     }
     ++i;
   }

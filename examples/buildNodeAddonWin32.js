@@ -20,13 +20,6 @@ class win32_node_addon extends NODE_ADDON_Win32 {
     '../node_modules/node-addon-api',
   ];
   files = ['src/addon.cc', 'src/Greeter.cc'];
-  linkdirs = [
-    ...super.linkdirs,
-    './lib/15.11.0/x64',
-  ];
-  libs = [
-    'node'
-  ];
 }
 
 run([

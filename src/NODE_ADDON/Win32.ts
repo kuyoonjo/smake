@@ -42,6 +42,18 @@ export abstract class NODE_ADDON_Win32 extends LLVM_Win32 {
     ]);
   }
 
+  get linkdirs() {
+    return super.linkdirs.concat([
+      `${CACHE_DIR}/${this.NODE_VERSION}/lib/${
+        this.ARCH === 'x86_64' ? 'win-x64' : 'win-x86'
+      }`,
+    ]);
+  }
+
+  get libs() {
+    return super.libs.concat(['node']);
+  }
+
   async generateCommands() {
     await downloadNodejs(this.NODE_VERSION);
     return super.generateCommands();

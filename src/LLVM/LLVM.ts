@@ -168,14 +168,15 @@ export abstract class LLVM extends Toolchain {
         label: magenta(`Building ${this.name}`),
         cmd: '',
         fn: async () => {
-          if (process.argv.includes('--verbose'))
-            execSync(`ninja -f ${this.ninjaFilePath} --verbose`, {
+          try {
+            let cmd = `ninja -f ${this.ninjaFilePath}`;
+            if (process.argv.includes('--verbose')) cmd += ' --verbose';
+            execSync(cmd, {
               stdio: 'inherit',
             });
-          else
-            execSync(`ninja -f ${this.ninjaFilePath}`, {
-              stdio: 'ignore',
-            });
+          } catch {
+            throw '';
+          }
         },
       },
     ];
