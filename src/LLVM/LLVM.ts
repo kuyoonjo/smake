@@ -13,7 +13,7 @@ export abstract class LLVM extends Toolchain {
     return 'executable';
   }
   get prefix() {
-    return '';
+    return process.env.SMAKE_LLVM_PREFIX || '';
   }
   get cxx() {
     return 'clang++';

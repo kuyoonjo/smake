@@ -1,6 +1,6 @@
 {
   "name": "smake",
-  "version": "0.1.0",
+  "version": "0.2.2",
   "description": "Typescript Module Template",
   "license": "MIT",
   "repository": "",
@@ -22,13 +22,16 @@
   ],
   "main": "lib/index",
   "types": "lib/index",
+  "bin": {
+    "smake": "./lib/bin.js"
+  },
   "scripts": {
     "clean": "rimraf lib && rimraf coverage",
     "format": "prettier --write \"{src,__tests__}/**/*.ts\" --single-quote --trailing-comma es5",
     "lint": "tslint --force --format verbose \"src/**/*.ts\"",
     "prepublishOnly": "npm run build",
     "prebuild": "npm run clean && npm run format && npm run lint && echo Using TypeScript && tsc --version",
-    "build": "tsc --pretty",
+    "build": "tsc --pretty && chmod +x lib/bin.js",
     "test": "jest",
     "coverage": "jest --coverage",
     "watch": "npm run build -- --watch",
@@ -59,6 +62,7 @@
   "dependencies": {
     "axios": "^0.21.1",
     "colors": "^1.4.0",
+    "commander": "^2.20.0",
     "download": "^8.0.0",
     "tar": "^6.1.0"
   }

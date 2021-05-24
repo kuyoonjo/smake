@@ -1,7 +1,11 @@
 import { LLVM } from './LLVM';
 
 export abstract class LLVM_Linux extends LLVM {
-  abstract get sysroot(): string;
+  get sysroot() {
+    return process.env[
+      'SMAKE_LLVM_SYSROOT_' + this.target.toUpperCase().replace(/-/g, '_')
+    ];
+  }
   get target() {
     return 'x86_64-linux-gnu';
   }

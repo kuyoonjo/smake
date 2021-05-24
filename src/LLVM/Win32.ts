@@ -3,10 +3,18 @@ import { join } from 'path';
 import { LLVM } from './LLVM';
 
 export abstract class LLVM_Win32 extends LLVM {
-  abstract get MSVC_VERSION(): string;
-  abstract get MSVC_PATH(): string;
-  abstract get WINDOWS_KITS_10_PATH(): string;
-  abstract get WINDOWS_KITS_10_VERSION(): string;
+  get MSVC_VERSION() {
+    return process.env.SMAKE_LLVM_MSVC_VERSION;
+  }
+  get MSVC_PATH() {
+    return process.env.SMAKE_LLVM_MSVC_PATH;
+  }
+  get WINDOWS_KITS_10_PATH() {
+    return process.env.SMAKE_LLVM_WINDOWS_KITS_10_PATH;
+  }
+  get WINDOWS_KITS_10_VERSION() {
+    return process.env.SMAKE_LLVM_WINDOWS_KITS_10_VERSION;
+  }
 
   get ARCH() {
     return 'x86_64';
