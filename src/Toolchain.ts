@@ -1,5 +1,5 @@
 import { rmSync } from 'fs';
-import { join } from 'path';
+import { join } from './join';
 
 const BUILD_DIR = '.smake';
 

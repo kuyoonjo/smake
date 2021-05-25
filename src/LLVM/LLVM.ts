@@ -1,7 +1,8 @@
 import { execSync } from 'child_process';
 import { magenta } from 'colors/safe';
 import { mkdirSync, rmSync, writeFileSync } from 'fs';
-import { join } from 'path';
+import { join } from '../join';
+import { quote } from '../quote';
 import { ICommand, Toolchain } from '../Toolchain';
 
 export abstract class LLVM extends Toolchain {
@@ -186,8 +187,8 @@ export abstract class LLVM extends Toolchain {
     let compiler = this.prefix + this.cc;
     if (this.target) compiler += ` -target ${this.target}`;
     const flags = [
-      ...this.sysIncludedirs.map((x) => `-isystem ${x}`),
-      ...this.includedirs.map((x) => `-I${x}`),
+      ...this.sysIncludedirs.map((x) => `-isystem ${quote(x)}`),
+      ...this.includedirs.map((x) => `-I${quote(x)}`),
       ...this.cflags,
       ...this.cxflags,
     ].join(' ');
@@ -202,8 +203,8 @@ export abstract class LLVM extends Toolchain {
     let compiler = this.prefix + this.cxx;
     if (this.target) compiler += ` -target ${this.target}`;
     const flags = [
-      ...this.sysIncludedirs.map((x) => `-isystem ${x}`),
-      ...this.includedirs.map((x) => `-I${x}`),
+      ...this.sysIncludedirs.map((x) => `-isystem ${quote(x)}`),
+      ...this.includedirs.map((x) => `-I${quote(x)}`),
       ...this.cxxflags,
       ...this.cxflags,
     ].join(' ');
@@ -238,7 +239,7 @@ export abstract class LLVM extends Toolchain {
       `rule ${this.constructor.name}_LD`,
       `  command = ${[
         linker,
-        ...this.linkdirs.map((x) => `-L${x}`),
+        ...this.linkdirs.map((x) => `-L${quote(x)}`),
         ...this.libs.map(
           (x: any) =>
             `-l${typeof x === 'string' ? x : new x().outputFileBasename}`
@@ -256,7 +257,7 @@ export abstract class LLVM extends Toolchain {
       `rule ${this.constructor.name}_SH`,
       `  command = ${[
         linker,
-        ...this.linkdirs.map((x) => `-L${x}`),
+        ...this.linkdirs.map((x) => `-L${quote(x)}`),
         ...this.libs.map(
           (x: any) =>
             `-l${typeof x === 'string' ? x : new x().outputFileBasename}`

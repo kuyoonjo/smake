@@ -1,10 +1,10 @@
 import axios from 'axios';
 import { createHash } from 'crypto';
 import { copyFileSync, existsSync, mkdirSync, readFileSync } from 'fs';
-import { homedir } from 'os';
-import { join } from 'path';
+import { join } from './join';
 import { extract } from 'tar';
 import { download } from './download';
+import { homedir } from './homedir';
 
 const NODEJS_ORG_MIRROR = 'https://nodejs.org/dist';
 export const CACHE_DIR = join(homedir(), '.cache', 'smake', 'nodejs');

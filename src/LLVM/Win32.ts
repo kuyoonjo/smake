@@ -1,5 +1,5 @@
 import { rmSync } from 'fs';
-import { join } from 'path';
+import { join } from '../join';
 import { LLVM } from './LLVM';
 
 export abstract class LLVM_Win32 extends LLVM {
