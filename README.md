@@ -29,6 +29,10 @@ npm i -g smake
 # LLVM 可执行文件目录前缀。
 # 如果已在 PATH 中可以不设置。
 export SMAKE_LLVM_PREFIX="/opt/homebrew/opt/llvm/bin/"
+
+# Clang 目录
+# 仅在 useClangHeaders = true 时需要
+export SMAKE_LLVM_CLANG_PATH="/opt/homebrew/opt/llvm/lib/clang/11.1.0"
 ```
 
 > Windows SDK 设置

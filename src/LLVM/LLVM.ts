@@ -32,10 +32,16 @@ export abstract class LLVM extends Toolchain {
     return 'llvm-ar';
   }
 
+  get useClangHeaders() {
+    return false;
+  }
+
   get includedirs(): string[] {
     return [];
   }
   get sysIncludedirs(): string[] {
+    if (this.useClangHeaders && process.env.SMAKE_LLVM_CLANG_PATH)
+      return [process.env.SMAKE_LLVM_CLANG_PATH + '/include'];
     return [];
   }
   get linkdirs(): string[] {

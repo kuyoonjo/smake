@@ -32,7 +32,7 @@ export async function run(
 
 async function build(targets: Array<{ new (): Toolchain }>, args: string[]) {
   const cmds: ICommand[] = [];
-  const names = targets.map((t) => t.constructor.name);
+  const names = targets.map((t) => t.name);
   for (const arg of args) {
     if (!names.includes(arg)) {
       Log.e('Unknown target', yellow(arg));
@@ -41,7 +41,7 @@ async function build(targets: Array<{ new (): Toolchain }>, args: string[]) {
   }
   const classes = targets.filter((t) => {
     if (!args.length) return true;
-    return args.includes(t.constructor.name);
+    return args.includes(t.name);
   });
   for (const Class of classes) {
     const obj = new Class();
@@ -74,7 +74,7 @@ async function build(targets: Array<{ new (): Toolchain }>, args: string[]) {
 }
 
 async function clean(targets: Array<{ new (): Toolchain }>, args: string[]) {
-  const names = targets.map((t) => t.constructor.name);
+  const names = targets.map((t) => t.name);
   for (const arg of args) {
     if (!names.includes(arg)) {
       Log.e('Unknown target', yellow(arg));
@@ -83,7 +83,7 @@ async function clean(targets: Array<{ new (): Toolchain }>, args: string[]) {
   }
   const classes = targets.filter((t) => {
     if (!args.length) return true;
-    return args.includes(t.constructor.name);
+    return args.includes(t.name);
   });
   for (const Class of classes) {
     const obj = new Class();

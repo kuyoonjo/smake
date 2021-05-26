@@ -35,6 +35,7 @@ export abstract class LLVM_Win32 extends LLVM {
 
   get sysIncludedirs() {
     return [
+      ...super.sysIncludedirs,
       `${this.MSVC_PATH}/include`,
       `${this.WINDOWS_KITS_10_PATH}/Include/${this.WINDOWS_KITS_10_VERSION}/ucrt`,
       `${this.WINDOWS_KITS_10_PATH}/Include/${this.WINDOWS_KITS_10_VERSION}/um`,

@@ -1,6 +1,6 @@
 const { LLVM_Linux } = require('../lib');
 
-const target = 'aarch-linux-gnu';
+const target = 'arm-linux-gnueabihf';
 
 class linux_executable extends LLVM_Linux {
   target = target;
