@@ -42,8 +42,8 @@ export SMAKE_LLVM_MSVC_VERSION=1928
 # Windows Kits 10 版本号
 export SMAKE_LLVM_WINDOWS_KITS_10_VERSION=10.0.19041.0
 
-# MSVC 目录。Windows 下可以不设置。如果设置，请使用 / 代替 \ 。如：C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC
-export SMAKE_LLVM_MSVC_PATH="/opt/sysroots/win32/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC"
+# MSVC 目录。Windows 下可以不设置。如果设置，请使用 / 代替 \ 。如：C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.28.29910
+export SMAKE_LLVM_MSVC_PATH="/opt/sysroots/win32/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.28.29910"
 # Windows Kits 10 位置。Windows 下可以不设置。如果设置，请使用 / 代替 \ 。如：C:/Program Files (x86)/Windows Kits/10
 export SMAKE_LLVM_WINDOWS_KITS_10_PATH="/opt/sysroots/win32/Program Files (x86)/Windows Kits/10"
 ```
