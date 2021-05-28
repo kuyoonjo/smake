@@ -6,26 +6,34 @@ export async function download(name: string, url: string, dist: string) {
   const data = d(url);
 
   const writer = createWriteStream(dist);
+  let responsed = false;
   data.on('response', (res) => {
-    const totalLength = res.headers['content-length'];
-    let downloadedLength = 0;
-    data.on('data', (chunk) => {
-      downloadedLength += chunk.length;
-      process.stdout.write(
-        [
-          'Downloading ',
-          yellow(name),
-          ' ',
-          url,
-          ' ',
-          (((downloadedLength / totalLength) * 100).toFixed(1) + '%').padEnd(
-            6,
-            ' '
-          ),
-          '\r',
-        ].join('')
-      );
-    });
+    const clk = Object.keys(res.headers).find(
+      (k) => k.toLowerCase() === 'content-length'
+    );
+    if (clk) {
+      if (responsed) return;
+      responsed = true;
+      const totalLength = res.headers[clk];
+      let downloadedLength = 0;
+      data.on('data', (chunk) => {
+        downloadedLength += chunk.length;
+        process.stdout.write(
+          [
+            'Downloading ',
+            yellow(name),
+            ' ',
+            url,
+            ' ',
+            (((downloadedLength / totalLength) * 100).toFixed(1) + '%').padEnd(
+              6,
+              ' '
+            ),
+            '\r',
+          ].join('')
+        );
+      });
+    }
   });
   data.pipe(writer);
   await data;

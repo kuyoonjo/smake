@@ -97,5 +97,3 @@ export async function downloadNodejs(ver: string = process.version) {
     copyFileSync(x86libSaved, x86libDist);
   }
 }
-
-downloadNodejs();
