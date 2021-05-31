@@ -64,6 +64,7 @@ export abstract class LLVM_Win32 extends LLVM {
       '-fdelayed-template-parsing',
       '-DWIN32',
       '-D_WINDOWS',
+      `-D_MSC_VER=${this.MSVC_VERSION}`,
     ];
     if (this.type === 'executable')
       flags.push('-fvisibility=hidden  -fvisibility-inlines-hidden');
