@@ -1,9 +1,17 @@
-import { CACHE_DIR, downloadNodejs } from '../downloadNodejs';
+import {
+  NODEJS_CACHE_DIR,
+  downloadNodejs,
+  ATOM_SHELL_CACHE_DIR,
+} from '../downloadNodejs';
+import { join } from '../join';
 import { LLVM_Win32 } from '../LLVM/Win32';
 
 export abstract class NODE_ADDON_Win32 extends LLVM_Win32 {
   get NODE_VERSION() {
     return process.version;
+  }
+  get NODE_TYPE() {
+    return 'nodejs';
   }
   get type() {
     return 'shared' as any;
@@ -37,16 +45,28 @@ export abstract class NODE_ADDON_Win32 extends LLVM_Win32 {
   }
 
   get includedirs() {
-    return super.includedirs.concat([
-      `${CACHE_DIR}/${this.NODE_VERSION}/include/node`,
-    ]);
+    let cacheDir: string;
+    switch (this.NODE_TYPE) {
+      case 'electron':
+        cacheDir = join(ATOM_SHELL_CACHE_DIR, this.NODE_VERSION);
+        break;
+      default:
+        cacheDir = join(NODEJS_CACHE_DIR, this.NODE_VERSION);
+    }
+    return super.includedirs.concat([`${cacheDir}/include/node`]);
   }
 
   get linkdirs() {
+    let cacheDir: string;
+    switch (this.NODE_TYPE) {
+      case 'electron':
+        cacheDir = join(ATOM_SHELL_CACHE_DIR, this.NODE_VERSION);
+        break;
+      default:
+        cacheDir = join(NODEJS_CACHE_DIR, this.NODE_VERSION);
+    }
     return super.linkdirs.concat([
-      `${CACHE_DIR}/${this.NODE_VERSION}/lib/${
-        this.ARCH === 'x86_64' ? 'win-x64' : 'win-x86'
-      }`,
+      `${cacheDir}/lib/${this.ARCH === 'x86_64' ? 'win-x64' : 'win-x86'}`,
     ]);
   }
 
@@ -55,7 +75,7 @@ export abstract class NODE_ADDON_Win32 extends LLVM_Win32 {
   }
 
   async generateCommands() {
-    await downloadNodejs(this.NODE_VERSION);
+    await downloadNodejs(this.NODE_TYPE, this.NODE_VERSION);
     return super.generateCommands();
   }
 }

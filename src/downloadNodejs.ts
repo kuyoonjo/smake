@@ -6,11 +6,38 @@ import { extract } from 'tar';
 import { download } from './download';
 import { homedir } from './homedir';
 
+const ATOM_SHELL_MIRROR =
+  'https://gh-contractor-zcbenz.s3.amazonaws.com/atom-shell/dist';
 const NODEJS_ORG_MIRROR = 'https://nodejs.org/dist';
-export const CACHE_DIR = join(homedir(), '.cache', 'smake', 'nodejs');
+export const NODEJS_CACHE_DIR = join(homedir(), '.cache', 'smake', 'nodejs');
+export const ATOM_SHELL_CACHE_DIR = join(
+  homedir(),
+  '.cache',
+  'smake',
+  'atom-shell'
+);
 
-export async function downloadNodejs(ver: string = process.version) {
-  const cacheDir = join(CACHE_DIR, ver);
+export async function downloadNodejs(
+  type: string = 'nodejs',
+  ver: string = process.version
+) {
+  let cacheDir: string;
+  let mirror: string;
+  switch (type) {
+    case 'electron':
+      cacheDir = join(ATOM_SHELL_CACHE_DIR, ver);
+      mirror =
+        process.env.NVM_ATOM_SHELL_MIRROR ||
+        process.env.ATOM_SHELL_MIRROR ||
+        ATOM_SHELL_MIRROR;
+      break;
+    default:
+      cacheDir = join(NODEJS_CACHE_DIR, ver);
+      mirror =
+        process.env.NVM_NODEJS_ORG_MIRROR ||
+        process.env.NODEJS_ORG_MIRROR ||
+        NODEJS_ORG_MIRROR;
+  }
   const includeDir = join(cacheDir, 'include');
   const libDir = join(cacheDir, 'lib');
 
@@ -37,7 +64,6 @@ export async function downloadNodejs(ver: string = process.version) {
 
   if (includeDirCached && x64libCached && x86libCached) return;
 
-  const mirror = process.env.NVM_NODEJS_ORG_MIRROR || NODEJS_ORG_MIRROR;
   const checksumUrl = `${mirror}/${ver}/SHASUMS256.txt`;
   const res = await axios.get(checksumUrl);
   const str = res.data as string;
