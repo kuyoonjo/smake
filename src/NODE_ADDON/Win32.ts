@@ -5,6 +5,7 @@ import {
 } from '../downloadNodejs';
 import { join } from '../join';
 import { LLVM_Win32 } from '../LLVM/Win32';
+import { quote } from '../quote';
 
 export abstract class NODE_ADDON_Win32 extends LLVM_Win32 {
   get NODE_VERSION() {
@@ -19,6 +20,11 @@ export abstract class NODE_ADDON_Win32 extends LLVM_Win32 {
   get name() {
     return 'Win32 Node Addon Builder';
   }
+
+  get sh() {
+    return 'lld-link';
+  }
+
   get cxflags() {
     const flags = [...super.cxflags, '-Daddon_EXPORTS', '-DNDEBUG'];
     return flags;
@@ -40,7 +46,7 @@ export abstract class NODE_ADDON_Win32 extends LLVM_Win32 {
     // /DLL addon.dir\Debug\Greeter.obj
     // addon.dir\Debug\addon.obj
     // addon.dir\Debug\win_delay_load_hook.obj'
-    const flags = [...super.shflags];
+    const flags = ['/DLL', '/DELAYLOAD:NODE.EXE'];
     return flags;
   }
 
@@ -71,11 +77,43 @@ export abstract class NODE_ADDON_Win32 extends LLVM_Win32 {
   }
 
   get libs() {
-    return super.libs.concat(['node']);
+    return super.libs.concat([
+      'node',
+      'libcmt',
+      'kernel32',
+      'user32',
+      'gdi32',
+      'winspool',
+      'shell32',
+      'ole32',
+      'oleaut32',
+      'uuid',
+      'comdlg32',
+      'advapi32',
+      'delayimp',
+    ]);
   }
 
   async generateCommands() {
     await downloadNodejs(this.NODE_TYPE, this.NODE_VERSION);
     return super.generateCommands();
+  }
+
+  async buildShared(objFiles: string[], distFile: string) {
+    const linker = this.prefix + this.sh;
+    return [
+      `rule ${this.constructor.name}_SH`,
+      `  command = ${[
+        linker,
+        ...this.linkdirs.map((x) => `/libpath:${quote(x)}`),
+        ...this.libs.map(
+          (x: any) =>
+            `${typeof x === 'string' ? x : new x().outputFileBasename}.lib`
+        ),
+        ...this.shflags,
+      ].join(' ')} $in /out:$out`,
+      '',
+      `build ${distFile}: ${this.constructor.name}_SH ${objFiles.join(' ')}`,
+    ].join('\n');
   }
 }

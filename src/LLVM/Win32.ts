@@ -37,6 +37,7 @@ export abstract class LLVM_Win32 extends LLVM {
     return [
       ...super.sysIncludedirs,
       `${this.MSVC_PATH}/include`,
+      `${this.MSVC_PATH}/atlmfc/include`,
       `${this.WINDOWS_KITS_10_PATH}/Include/${this.WINDOWS_KITS_10_VERSION}/ucrt`,
       `${this.WINDOWS_KITS_10_PATH}/Include/${this.WINDOWS_KITS_10_VERSION}/um`,
       `${this.WINDOWS_KITS_10_PATH}/Include/${this.WINDOWS_KITS_10_VERSION}/shared`,
@@ -48,6 +49,7 @@ export abstract class LLVM_Win32 extends LLVM {
     return [
       ...super.linkdirs,
       `${this.MSVC_PATH}/lib/${dir}`,
+      `${this.MSVC_PATH}/atlmfc/lib/${dir}`,
       `${this.WINDOWS_KITS_10_PATH}/Lib/${this.WINDOWS_KITS_10_VERSION}/ucrt/${dir}`,
       `${this.WINDOWS_KITS_10_PATH}/Lib/${this.WINDOWS_KITS_10_VERSION}/um/${dir}`,
     ];
