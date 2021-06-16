@@ -3,6 +3,8 @@ import { join } from './join';
 
 const BUILD_DIR = '.smake';
 
+export const SMAKE_LIB_PATH = __dirname;
+
 export interface ICommand {
   label: string;
   cmd: string;

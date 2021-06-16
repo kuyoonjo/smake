@@ -1,6 +1,6 @@
 {
   "name": "smake",
-  "version": "0.3.8",
+  "version": "0.3.11",
   "description": "Typescript Module Template",
   "license": "MIT",
   "repository": "",
@@ -31,7 +31,7 @@
     "lint": "tslint --force --format verbose \"src/**/*.ts\"",
     "prepublishOnly": "npm run build",
     "prebuild": "npm run clean && npm run format && npm run lint && echo Using TypeScript && tsc --version",
-    "build": "tsc --pretty && chmod +x lib/bin.js",
+    "build": "tsc --pretty && chmod +x lib/bin.js && cp src/win_delay_load_hook.cc lib/win_delay_load_hook.cc",
     "test": "jest",
     "coverage": "jest --coverage",
     "watch": "npm run build -- --watch",

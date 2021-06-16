@@ -1,3 +1,4 @@
+import { relative } from 'path';
 import {
   NODEJS_CACHE_DIR,
   downloadNodejs,
@@ -6,6 +7,7 @@ import {
 import { join } from '../join';
 import { LLVM_Win32 } from '../LLVM/Win32';
 import { quote } from '../quote';
+import { SMAKE_LIB_PATH } from '../Toolchain';
 
 export abstract class NODE_ADDON_Win32 extends LLVM_Win32 {
   get NODE_VERSION() {
@@ -97,6 +99,29 @@ export abstract class NODE_ADDON_Win32 extends LLVM_Win32 {
   async generateCommands() {
     await downloadNodejs(this.NODE_TYPE, this.NODE_VERSION);
     return super.generateCommands();
+  }
+
+  async buildObjs() {
+    const outDir = join(this.buildDir, this.cacheDirname, this.objOutDirname);
+
+    const res = [
+      ...this.files,
+      `${relative(process.cwd(), SMAKE_LIB_PATH).replace(
+        /\\/g,
+        '/'
+      )}/win_delay_load_hook.cc`,
+    ].map((f) => {
+      const out = join(outDir, f.replace(/\.\./g, '_') + this.objOutSuffix);
+      return {
+        cmd: `build ${out}: ${this.constructor.name}_${
+          this.isCFile(f) ? 'CC' : 'CXX'
+        } ${f}`,
+        out,
+      };
+    });
+    const cmd = res.map((x) => x.cmd).join('\n');
+    const outs = res.map((x) => x.out);
+    return { cmd, outs };
   }
 
   async buildShared(objFiles: string[], distFile: string) {

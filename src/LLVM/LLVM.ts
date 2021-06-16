@@ -226,7 +226,7 @@ export abstract class LLVM extends Toolchain {
     const outDir = join(this.buildDir, this.cacheDirname, this.objOutDirname);
 
     const res = this.files.map((f) => {
-      const out = join(outDir, f + this.objOutSuffix);
+      const out = join(outDir, f.replace(/\.\./g, '_') + this.objOutSuffix);
       return {
         cmd: `build ${out}: ${this.constructor.name}_${
           this.isCFile(f) ? 'CC' : 'CXX'
