@@ -7,7 +7,7 @@
 ## 依赖
 - [LLVM >= 11](https://github.com/llvm/llvm-project/releases)
 - [Nodejs >= 11.15](https://npm.taobao.org/mirrors/node)
-- [Ninja >= 1.10](https://github.com/ninja-build/ninja/releases)
+- [Ninja >= 1.10](https://github.com/ninja-build/ninja/releases) 安装目录需要添加至系统 PATH 环境变量
 
 ## 安装
 ```
@@ -24,6 +24,7 @@ npm i -g smake
 - [x] Windows 下编译 Windows
 
 ## 设置
+> 所有路径在 Windows 下请使用 / 代替 \ 。如：C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.28.29910
 
 ```bash
 # LLVM 可执行文件目录前缀。
@@ -42,9 +43,9 @@ export SMAKE_LLVM_MSVC_VERSION=1928
 # Windows Kits 10 版本号
 export SMAKE_LLVM_WINDOWS_KITS_10_VERSION=10.0.19041.0
 
-# MSVC 目录。Windows 下可以不设置。如果设置，请使用 / 代替 \ 。如：C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.28.29910
+# MSVC 目录
 export SMAKE_LLVM_MSVC_PATH="/opt/sysroots/win32/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.28.29910"
-# Windows Kits 10 位置。Windows 下可以不设置。如果设置，请使用 / 代替 \ 。如：C:/Program Files (x86)/Windows Kits/10
+# Windows Kits 10 目录
 export SMAKE_LLVM_WINDOWS_KITS_10_PATH="/opt/sysroots/win32/Program Files (x86)/Windows Kits/10"
 ```
 
@@ -67,7 +68,11 @@ export NVM_NODEJS_ORG_MIRROR=http://npm.taobao.org/mirrors/node
 ```
 
 ## 使用方法
-在项目目录下创建 `xmake.js` 文件。
+
+- 在项目目录下创建 `package.json` 文件。
+- 安装项目依赖 `npm i -D smake`
+- 在项目目录下创建 `xmake.js` 文件。
+
 > Linux
 ```js
 const { LLVM_Linux } = require('smake');
