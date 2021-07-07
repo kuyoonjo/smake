@@ -72,8 +72,8 @@ export abstract class NODE_ADDON_Darwin extends LLVM_Darwin {
     return super.includedirs.concat([`${cacheDir}/include/node`]);
   }
 
-  async generateCommands() {
+  async generateCommands(first: boolean, last: boolean) {
     await downloadNodejs(this.NODE_TYPE, this.NODE_VERSION);
-    return super.generateCommands();
+    return super.generateCommands(first, last);
   }
 }

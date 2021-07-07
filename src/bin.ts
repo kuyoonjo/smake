@@ -13,6 +13,7 @@ program
   .usage('[command] [options]')
   .command('build [targets...]', undefined, { isDefault: true })
   .option('-v, --verbose', 'verbose output')
+  .option('-cdb, --compdb', 'JSON Compilation Database')
   .option('-f, --file <path>', 'specify the smake build file')
   .action((targets, command) => {
     const opts = command.opts();
@@ -24,6 +25,7 @@ program
     const m = require(file);
     const args = ['build', ...targets];
     if (opts.verbose) args.push('--verbose');
+    if (opts.compdb) args.push('--compdb');
     run(m.targets, args);
   });
 

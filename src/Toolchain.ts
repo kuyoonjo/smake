@@ -19,7 +19,7 @@ export abstract class Toolchain {
     return '.' + this.constructor.name;
   }
 
-  abstract generateCommands(): Promise<ICommand[]>;
+  abstract generateCommands(first: boolean, last: boolean): Promise<ICommand[]>;
 
   async clean() {
     rmSync(join(this.buildDir, this.cacheDirname), {

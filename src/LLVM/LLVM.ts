@@ -7,6 +7,7 @@ import { ICommand, Toolchain } from '../Toolchain';
 
 export abstract class LLVM extends Toolchain {
   abstract get files(): string[];
+  private static __compdb = [];
   get name() {
     return 'LLVM Builder';
   }
@@ -129,6 +130,10 @@ export abstract class LLVM extends Toolchain {
     return join(this.buildDir, this.constructor.name + '.ninja');
   }
 
+  get compdbFilePath() {
+    return 'compile_commands.json';
+  }
+
   isCFile(f: string) {
     return f.endsWith('.c');
   }
@@ -142,7 +147,7 @@ export abstract class LLVM extends Toolchain {
     );
   }
 
-  async generateCommands(): Promise<ICommand[]> {
+  async generateCommands(first: boolean, last: boolean): Promise<ICommand[]> {
     const { cmd, outs } = await this.buildObjs();
     const content = [
       await this.buildCCRules(),
@@ -171,21 +176,42 @@ export abstract class LLVM extends Toolchain {
           writeFileSync(this.ninjaFilePath, content.join('\n'));
         },
       },
-      {
-        label: magenta(`Building ${this.name}`),
-        cmd: '',
-        fn: async () => {
-          try {
-            let cmd = `ninja -f ${this.ninjaFilePath}`;
-            if (process.argv.includes('--verbose')) cmd += ' --verbose';
-            execSync(cmd, {
-              stdio: 'inherit',
-            });
-          } catch {
-            throw '';
+      process.argv.includes('--compdb')
+        ? {
+            label: magenta(`Compdb ${this.name}`),
+            cmd: '',
+            fn: async () => {
+              try {
+                let cmd = `ninja -f ${this.ninjaFilePath} -t compdb`;
+                const json = execSync(cmd).toString();
+                const arr = JSON.parse(json);
+                if (first) LLVM.__compdb = [];
+                LLVM.__compdb = LLVM.__compdb.concat(arr);
+                if (last)
+                  writeFileSync(
+                    this.compdbFilePath,
+                    JSON.stringify(LLVM.__compdb, null, 2)
+                  );
+              } catch {
+                throw '';
+              }
+            },
           }
-        },
-      },
+        : {
+            label: magenta(`Building ${this.name}`),
+            cmd: '',
+            fn: async () => {
+              try {
+                let cmd = `ninja -f ${this.ninjaFilePath}`;
+                if (process.argv.includes('--verbose')) cmd += ' --verbose';
+                execSync(cmd, {
+                  stdio: 'inherit',
+                });
+              } catch {
+                throw '';
+              }
+            },
+          },
     ];
   }
 

@@ -43,10 +43,13 @@ async function build(targets: Array<{ new (): Toolchain }>, args: string[]) {
     if (!args.length) return true;
     return args.includes(t.name);
   });
+
+  let ci = 0;
   for (const Class of classes) {
     const obj = new Class();
-    const ms = await obj.generateCommands();
+    const ms = await obj.generateCommands(!ci, ci === classes.length - 1);
     cmds.splice(cmds.length, 0, ...ms);
+    ++ci;
   }
 
   let i = 0;

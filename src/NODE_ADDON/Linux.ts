@@ -50,8 +50,8 @@ export abstract class NODE_ADDON_Linux extends LLVM_Linux {
     return super.includedirs.concat([`${cacheDir}/include/node`]);
   }
 
-  async generateCommands() {
+  async generateCommands(first: boolean, last: boolean) {
     await downloadNodejs(this.NODE_TYPE, this.NODE_VERSION);
-    return super.generateCommands();
+    return super.generateCommands(first, last);
   }
 }

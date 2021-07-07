@@ -96,9 +96,9 @@ export abstract class NODE_ADDON_Win32 extends LLVM_Win32 {
     ]);
   }
 
-  async generateCommands() {
+  async generateCommands(first: boolean, last: boolean) {
     await downloadNodejs(this.NODE_TYPE, this.NODE_VERSION);
-    return super.generateCommands();
+    return super.generateCommands(first, last);
   }
 
   async buildObjs() {
