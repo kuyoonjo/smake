@@ -57,6 +57,9 @@ export abstract class LLVM extends Toolchain {
   get cxxflags(): string[] {
     return [];
   }
+  get asmflags(): string[] {
+    return [];
+  }
   get cxflags(): string[] {
     return [];
   }
@@ -67,6 +70,9 @@ export abstract class LLVM extends Toolchain {
     return [];
   }
   get arflags(): string[] {
+    return [];
+  }
+  get arobjs(): string[] {
     return [];
   }
 
@@ -147,11 +153,16 @@ export abstract class LLVM extends Toolchain {
     );
   }
 
+  isASMFile(f: string) {
+    return f.endsWith('.s') || f.endsWith('.S') || f.endsWith('.asm');
+  }
+
   async generateCommands(first: boolean, last: boolean): Promise<ICommand[]> {
     const { cmd, outs } = await this.buildObjs();
     const content = [
       await this.buildCCRules(),
       await this.buildCXXRules(),
+      await this.buildASMRules(),
       cmd,
     ];
     switch (this.type) {
@@ -248,6 +259,22 @@ export abstract class LLVM extends Toolchain {
     ].join('\n');
   }
 
+  async buildASMRules() {
+    let compiler = this.prefix + this.cc;
+    if (this.target) compiler += ` -target ${this.target}`;
+    const flags = [
+      ...this.sysIncludedirs.map((x) => `-isystem ${quote(x)}`),
+      ...this.includedirs.map((x) => `-I${quote(x)}`),
+      ...this.cflags,
+      ...this.asmflags,
+    ].join(' ');
+    return [
+      `rule ${this.constructor.name}_ASM`,
+      '  depfile = $out.d',
+      `  command = ${compiler} -MD -MF $out.d ${flags} -c $in -o $out`,
+    ].join('\n');
+  }
+
   async buildObjs() {
     const outDir = join(this.buildDir, this.cacheDirname, this.objOutDirname);
 
@@ -255,7 +282,7 @@ export abstract class LLVM extends Toolchain {
       const out = join(outDir, f.replace(/\.\./g, '_') + this.objOutSuffix);
       return {
         cmd: `build ${out}: ${this.constructor.name}_${
-          this.isCFile(f) ? 'CC' : 'CXX'
+          this.isCXXFile(f) ? 'CXX' : this.isASMFile(f) ? 'ASM' : 'CC'
         } ${f}`,
         out,
       };
@@ -305,10 +332,12 @@ export abstract class LLVM extends Toolchain {
   async buildStatic(objFiles: string[], distFile: string) {
     const linker = this.prefix + this.ar;
     return [
-      `rule ${this.constructor.name}_SH`,
-      `  command = ${[linker, ...this.arflags].join(' ')} cr $out $in`,
+      `rule ${this.constructor.name}_AR`,
+      `  command = ${[linker, ...this.arflags].join(
+        ' '
+      )} cr $out $in ${this.arobjs.join(' ')}`,
       '',
-      `build ${distFile}: ${this.constructor.name}_SH ${objFiles.join(' ')}`,
+      `build ${distFile}: ${this.constructor.name}_AR ${objFiles.join(' ')}`,
     ].join('\n');
   }
 
