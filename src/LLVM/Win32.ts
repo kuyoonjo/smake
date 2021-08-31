@@ -1,8 +1,24 @@
 import { rmSync } from 'fs';
 import { join } from '../join';
+import { quote } from '../quote';
 import { LLVM } from './LLVM';
 
 export abstract class LLVM_Win32 extends LLVM {
+  get useLldLink() {
+    return false;
+  }
+  get ld() {
+    if (this.useLldLink) return 'lld-link';
+    return super.ld;
+  }
+  get sh() {
+    if (this.useLldLink) return 'lld-link';
+    return super.sh;
+  }
+  get libs() {
+    if (this.useLldLink) return [...super.libs, 'libcmt'];
+    return super.libs;
+  }
   get MSVC_VERSION() {
     return process.env.SMAKE_LLVM_MSVC_VERSION;
   }
@@ -77,6 +93,7 @@ export abstract class LLVM_Win32 extends LLVM {
     return '.exe';
   }
   get ldflags() {
+    if (this.useLldLink) return [];
     const mflag = this.ARCH === 'x86_64' ? '-m64' : '-m32';
     const flags = ['-fuse-ld=lld', `-target ${this.target}`, mflag];
     return flags;
@@ -89,6 +106,7 @@ export abstract class LLVM_Win32 extends LLVM {
     return '.dll';
   }
   get shflags() {
+    if (this.useLldLink) return ['/DLL'];
     const mflag = this.ARCH === 'x86_64' ? '-m64' : '-m32';
     const flags = ['-shared', '-fuse-ld=lld', `-target ${this.target}`, mflag];
     return flags;
@@ -113,5 +131,43 @@ export abstract class LLVM_Win32 extends LLVM {
           force: true,
         }
       );
+  }
+
+  async buildShared(objFiles: string[], distFile: string) {
+    if (!this.useLldLink) return super.buildShared(objFiles, distFile);
+    const linker = this.prefix + this.sh;
+    return [
+      `rule ${this.constructor.name}_SH`,
+      `  command = ${[
+        linker,
+        ...this.linkdirs.map((x) => `/libpath:${quote(x)}`),
+        ...this.libs.map(
+          (x: any) =>
+            `${typeof x === 'string' ? x : new x().outputFileBasename}.lib`
+        ),
+        ...this.shflags,
+      ].join(' ')} $in /out:$out`,
+      '',
+      `build ${distFile}: ${this.constructor.name}_SH ${objFiles.join(' ')}`,
+    ].join('\n');
+  }
+
+  async buildExecutable(objFiles: string[], distFile: string) {
+    if (!this.useLldLink) return super.buildExecutable(objFiles, distFile);
+    const linker = this.prefix + this.sh;
+    return [
+      `rule ${this.constructor.name}_LD`,
+      `  command = ${[
+        linker,
+        ...this.linkdirs.map((x) => `/libpath:${quote(x)}`),
+        ...this.libs.map(
+          (x: any) =>
+            `${typeof x === 'string' ? x : new x().outputFileBasename}.lib`
+        ),
+        ...this.ldflags,
+      ].join(' ')} $in /out:$out`,
+      '',
+      `build ${distFile}: ${this.constructor.name}_LD ${objFiles.join(' ')}`,
+    ].join('\n');
   }
 }
