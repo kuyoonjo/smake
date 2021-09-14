@@ -1,6 +1,7 @@
 import { execSync } from 'child_process';
 import * as colors from 'colors/safe';
 import { Log } from './Log';
+import { flatTarget, Target } from './Target';
 import { ICommand, Toolchain } from './Toolchain';
 
 const yellow = colors.yellow;
@@ -30,7 +31,7 @@ export async function run(
   }
 }
 
-async function build(targets: Array<{ new (): Toolchain }>, args: string[]) {
+async function build(targets: Array<Target>, args: string[]) {
   const cmds: ICommand[] = [];
   const names = targets.map((t) => t.name);
   for (const arg of args) {
@@ -39,10 +40,13 @@ async function build(targets: Array<{ new (): Toolchain }>, args: string[]) {
       process.exit(0);
     }
   }
-  const classes = targets.filter((t) => {
-    if (!args.length) return true;
-    return args.includes(t.name);
-  });
+  const classes = targets
+    .filter((t) => {
+      if (!args.length) return true;
+      return args.includes(t.name);
+    })
+    .map((t) => flatTarget(t))
+    .flat();
 
   let ci = 0;
   for (const Class of classes) {
