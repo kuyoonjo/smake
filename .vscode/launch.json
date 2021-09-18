@@ -5,22 +5,22 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "type": "node",
+      "name": "(Windows) 启动",
+      "windows": {
+        "type": "cppvsdbg",
+        "name": "Launch",
+        "request": "launch",
+        "program": "${workspaceRoot}/maincpp",
+        "cwd": "${workspaceRoot}"
+      },
+      "type": "cppvsdbg",
       "request": "launch",
-      "protocol": "inspector",
-      "name": "Jest Debug",
-      "program": "${workspaceRoot}/node_modules/jest/bin/jest",
-      "stopOnEntry": false,
-      "args": [
-        "--runInBand",
-        "${fileBasename}"
-      ],
-      "runtimeArgs": [
-        "--inspect-brk"
-      ],
-      "cwd": "${workspaceRoot}",
-      "sourceMaps": true,
-      "console": "integratedTerminal"
+      "program": "${workspaceFolder}/maincpp",
+      "args": [],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}",
+      "environment": [],
+      "console": "integratedTerminal" 
     }
   ]
 }
