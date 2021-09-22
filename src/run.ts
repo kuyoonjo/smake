@@ -201,6 +201,7 @@ function ideVscodeTasks(keys: string[]) {
       options: {
         cwd: '${workspaceRoot}',
       },
+      problemMatcher: [],
     };
   }
   for (const k of keys) {
@@ -215,6 +216,7 @@ function ideVscodeTasks(keys: string[]) {
       options: {
         cwd: '${workspaceRoot}',
       },
+      problemMatcher: [],
     };
   }
   writeFileSync(fp, JSON.stringify(json, null, 2));
