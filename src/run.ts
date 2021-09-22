@@ -203,6 +203,20 @@ function ideVscodeTasks(keys: string[]) {
       },
     };
   }
+  for (const k of keys) {
+    const label = 'Clean ' + k;
+    let i = json.tasks.findIndex((t) => t.label === label);
+    if (!~i) i = json.tasks.length;
+    json.tasks[i] = {
+      label,
+      type: 'shell',
+      command: 'node',
+      args: ['node_modules/smake/lib/bin', 'clean', k],
+      options: {
+        cwd: '${workspaceRoot}',
+      },
+    };
+  }
   writeFileSync(fp, JSON.stringify(json, null, 2));
 }
 
