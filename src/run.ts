@@ -167,7 +167,7 @@ function ideVscodeTasks(keys: string[]) {
       label,
       type: 'shell',
       command: 'node',
-      args: ['node_modules/smake/lib/bin', 'build', 'main'],
+      args: ['node_modules/smake/lib/bin', 'build', k],
       group: 'build',
       options: {
         cwd: '${workspaceRoot}',
@@ -182,7 +182,7 @@ function ideVscodeTasks(keys: string[]) {
       label,
       type: 'shell',
       command: 'node',
-      args: ['node_modules/smake/lib/bin', 'build', '-d', 'main'],
+      args: ['node_modules/smake/lib/bin', 'build', '-d', k],
       group: 'test',
       options: {
         cwd: '${workspaceRoot}',
@@ -197,7 +197,7 @@ function ideVscodeTasks(keys: string[]) {
       label,
       type: 'shell',
       command: 'node',
-      args: ['node_modules/smake/lib/bin', 'build', '-c', 'main'],
+      args: ['node_modules/smake/lib/bin', 'build', '-c', k],
       options: {
         cwd: '${workspaceRoot}',
       },
