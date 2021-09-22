@@ -63,6 +63,7 @@
     "axios": "^0.21.1",
     "colors": "^1.4.0",
     "commander": "^2.20.0",
+    "comment-json": "^4.1.1",
     "download": "^8.0.0",
     "tar": "^6.1.0"
   }

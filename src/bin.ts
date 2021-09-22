@@ -46,6 +46,21 @@ program
     run(m.targets, args);
   });
 
+program
+  .command('ide')
+  .option('-f, --file <path>', 'specify the smake build file')
+  .action((command) => {
+    const opts = command.opts();
+    const file = resolve(opts.file || 'smake.js');
+    if (!existsSync(file)) {
+      Log.e('Cannot find', yellow(file));
+      process.exit(1);
+    }
+    const m = require(file);
+    const args = ['ide'];
+    run(m.targets, args);
+  });
+
 program.on('command:*', (operands: any) => {
   Log.e('unknown command', cyan(operands[0]));
 });
