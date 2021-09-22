@@ -5,6 +5,17 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "(lldb) Launch",
+      "type": "lldb",
+      "request": "launch",
+      "program": "${workspaceRoot}/.smake/darwin_arm64",
+      "args": [],
+      "stopAtEntry": false,
+      "cwd": "${workspaceRoot}",
+      "environment": [],
+      "externalConsole": false
+    },
+    {
       "name": "(Windows) 启动",
       "windows": {
         "type": "cppvsdbg",
@@ -13,14 +24,15 @@
         "program": "${workspaceRoot}/maincpp",
         "cwd": "${workspaceRoot}"
       },
-      "type": "cppvsdbg",
+      "type": "cppdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/maincpp",
+      "program": "${workspaceFolder}/.smake/darwin_arm64",
       "args": [],
       "stopAtEntry": false,
       "cwd": "${workspaceFolder}",
       "environment": [],
-      "console": "integratedTerminal" 
+      "console": "integratedTerminal" ,
+      "MIMode": "lldb"
     }
   ]
 }

@@ -128,15 +128,17 @@ export abstract class NODE_ADDON_Win32 extends LLVM_Win32 {
     const linker = this.prefix + this.sh;
     return [
       `rule ${this.constructor.name}_SH`,
-      `  command = ${[
-        linker,
-        ...this.linkdirs.map((x) => `/libpath:${quote(x)}`),
-        ...this.libs.map(
-          (x: any) =>
-            `${typeof x === 'string' ? x : new x().outputFileBasename}.lib`
-        ),
-        ...this.shflags,
-      ].join(' ')} $in /out:$out`,
+      `  command = ${
+        [
+          linker,
+          ...this.linkdirs.map((x) => `/libpath:${quote(x)}`),
+          ...this.libs.map(
+            (x: any) =>
+              `${typeof x === 'string' ? x : new x().outputFileBasename}.lib`
+          ),
+          ...this.shflags,
+        ].join(' ') + this.lldLinkDebugFlags
+      } $in /out:$out`,
       '',
       `build ${distFile}: ${this.constructor.name}_SH ${objFiles.join(' ')}`,
     ].join('\n');

@@ -76,6 +76,11 @@ export abstract class LLVM extends Toolchain {
     return [];
   }
 
+  get debugFlags(): string {
+    if (process.argv.includes('--debug')) return ' -g';
+    return '';
+  }
+
   get target() {
     return '';
   }
@@ -229,12 +234,13 @@ export abstract class LLVM extends Toolchain {
   async buildCCRules() {
     let compiler = this.prefix + this.cc;
     if (this.target) compiler += ` -target ${this.target}`;
-    const flags = [
-      ...this.sysIncludedirs.map((x) => `-isystem ${quote(x)}`),
-      ...this.includedirs.map((x) => `-I${quote(x)}`),
-      ...this.cflags,
-      ...this.cxflags,
-    ].join(' ');
+    const flags =
+      [
+        ...this.sysIncludedirs.map((x) => `-isystem ${quote(x)}`),
+        ...this.includedirs.map((x) => `-I${quote(x)}`),
+        ...this.cflags,
+        ...this.cxflags,
+      ].join(' ') + this.debugFlags;
     return [
       `rule ${this.constructor.name}_CC`,
       '  depfile = $out.d',
@@ -245,12 +251,13 @@ export abstract class LLVM extends Toolchain {
   async buildCXXRules() {
     let compiler = this.prefix + this.cxx;
     if (this.target) compiler += ` -target ${this.target}`;
-    const flags = [
-      ...this.sysIncludedirs.map((x) => `-isystem ${quote(x)}`),
-      ...this.includedirs.map((x) => `-I${quote(x)}`),
-      ...this.cxxflags,
-      ...this.cxflags,
-    ].join(' ');
+    const flags =
+      [
+        ...this.sysIncludedirs.map((x) => `-isystem ${quote(x)}`),
+        ...this.includedirs.map((x) => `-I${quote(x)}`),
+        ...this.cxxflags,
+        ...this.cxflags,
+      ].join(' ') + this.debugFlags;
 
     return [
       `rule ${this.constructor.name}_CXX`,
@@ -262,12 +269,13 @@ export abstract class LLVM extends Toolchain {
   async buildASMRules() {
     let compiler = this.prefix + this.cc;
     if (this.target) compiler += ` -target ${this.target}`;
-    const flags = [
-      ...this.sysIncludedirs.map((x) => `-isystem ${quote(x)}`),
-      ...this.includedirs.map((x) => `-I${quote(x)}`),
-      ...this.cflags,
-      ...this.asmflags,
-    ].join(' ');
+    const flags =
+      [
+        ...this.sysIncludedirs.map((x) => `-isystem ${quote(x)}`),
+        ...this.includedirs.map((x) => `-I${quote(x)}`),
+        ...this.cflags,
+        ...this.asmflags,
+      ].join(' ') + this.debugFlags;
     return [
       `rule ${this.constructor.name}_ASM`,
       '  depfile = $out.d',
@@ -296,15 +304,17 @@ export abstract class LLVM extends Toolchain {
     const linker = this.prefix + this.ld;
     return [
       `rule ${this.constructor.name}_LD`,
-      `  command = ${[
-        linker,
-        ...this.linkdirs.map((x) => `-L${quote(x)}`),
-        ...this.libs.map(
-          (x: any) =>
-            `-l${typeof x === 'string' ? x : new x().outputFileBasename}`
-        ),
-        ...this.ldflags,
-      ].join(' ')} $in -o $out`,
+      `  command = ${
+        [
+          linker,
+          ...this.linkdirs.map((x) => `-L${quote(x)}`),
+          ...this.libs.map(
+            (x: any) =>
+              `-l${typeof x === 'string' ? x : new x().outputFileBasename}`
+          ),
+          ...this.ldflags,
+        ].join(' ') + this.debugFlags
+      } $in -o $out`,
       '',
       `build ${distFile}: ${this.constructor.name}_LD ${objFiles.join(' ')}`,
     ].join('\n');
@@ -314,16 +324,18 @@ export abstract class LLVM extends Toolchain {
     const linker = this.prefix + this.sh;
     return [
       `rule ${this.constructor.name}_SH`,
-      `  command = ${[
-        linker,
-        ...this.linkdirs.map((x) => `-L${quote(x)}`),
-        ...this.libs.map(
-          (x: any) =>
-            `-l${typeof x === 'string' ? x : new x().outputFileBasename}`
-        ),
-        ...this.shflags,
-        '-shared',
-      ].join(' ')} $in -o $out`,
+      `  command = ${
+        [
+          linker,
+          ...this.linkdirs.map((x) => `-L${quote(x)}`),
+          ...this.libs.map(
+            (x: any) =>
+              `-l${typeof x === 'string' ? x : new x().outputFileBasename}`
+          ),
+          ...this.shflags,
+          '-shared',
+        ].join(' ') + this.debugFlags
+      } $in -o $out`,
       '',
       `build ${distFile}: ${this.constructor.name}_SH ${objFiles.join(' ')}`,
     ].join('\n');

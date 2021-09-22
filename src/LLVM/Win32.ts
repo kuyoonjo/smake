@@ -89,6 +89,11 @@ export abstract class LLVM_Win32 extends LLVM {
     return flags;
   }
 
+  get lldLinkDebugFlags(): string {
+    if (process.argv.includes('--debug')) return ' /DEBUG';
+    return '';
+  }
+
   get executableOutSuffix() {
     return '.exe';
   }
@@ -138,15 +143,17 @@ export abstract class LLVM_Win32 extends LLVM {
     const linker = this.prefix + this.sh;
     return [
       `rule ${this.constructor.name}_SH`,
-      `  command = ${[
-        linker,
-        ...this.linkdirs.map((x) => `/libpath:${quote(x)}`),
-        ...this.libs.map(
-          (x: any) =>
-            `${typeof x === 'string' ? x : new x().outputFileBasename}.lib`
-        ),
-        ...this.shflags,
-      ].join(' ')} $in /out:$out`,
+      `  command = ${
+        [
+          linker,
+          ...this.linkdirs.map((x) => `/libpath:${quote(x)}`),
+          ...this.libs.map(
+            (x: any) =>
+              `${typeof x === 'string' ? x : new x().outputFileBasename}.lib`
+          ),
+          ...this.shflags,
+        ].join(' ') + this.lldLinkDebugFlags
+      } $in /out:$out`,
       '',
       `build ${distFile}: ${this.constructor.name}_SH ${objFiles.join(' ')}`,
     ].join('\n');
@@ -157,15 +164,17 @@ export abstract class LLVM_Win32 extends LLVM {
     const linker = this.prefix + this.sh;
     return [
       `rule ${this.constructor.name}_LD`,
-      `  command = ${[
-        linker,
-        ...this.linkdirs.map((x) => `/libpath:${quote(x)}`),
-        ...this.libs.map(
-          (x: any) =>
-            `${typeof x === 'string' ? x : new x().outputFileBasename}.lib`
-        ),
-        ...this.ldflags,
-      ].join(' ')} $in /out:$out`,
+      `  command = ${
+        [
+          linker,
+          ...this.linkdirs.map((x) => `/libpath:${quote(x)}`),
+          ...this.libs.map(
+            (x: any) =>
+              `${typeof x === 'string' ? x : new x().outputFileBasename}.lib`
+          ),
+          ...this.ldflags,
+        ].join(' ') + this.lldLinkDebugFlags
+      } $in /out:$out`,
       '',
       `build ${distFile}: ${this.constructor.name}_LD ${objFiles.join(' ')}`,
     ].join('\n');
