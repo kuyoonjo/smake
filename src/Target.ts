@@ -11,8 +11,19 @@ export type Target =
     }
   | TargetGroup;
 
-export function flatTarget(t: Target): Array<{ new (): Toolchain }> {
+export function flatTarget(
+  t: Target,
+  prefix = ''
+): Array<{
+  [k: string]: { new (): Toolchain };
+}> {
   const x = t as any;
-  if (x.prototype) return [x];
-  return x.targets.map((tt: any) => flatTarget(tt)).flat(100);
+  if (x.prototype) {
+    const obj: any = {};
+    obj[prefix + x.name] = x;
+    return [obj];
+  }
+  return x.targets
+    .map((tt: any) => flatTarget(tt, prefix + x.name + ':'))
+    .flat(100);
 }

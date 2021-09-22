@@ -12,11 +12,19 @@ class darwin_static extends LLVM_Darwin {
   ARCH = ARCH;
   type = 'static';
   files = ['src/lib.cpp'];
+  cxxflags = [
+    ...super.cxxflags,
+    '-g',
+  ];
 }
 class darwin_static_executable extends LLVM_Darwin {
   ARCH = ARCH;
   files = ['src/libmain.cpp'];
   libs = [darwin_static];
+  cxxflags = [
+    ...super.cxxflags,
+    '-g',
+  ];
 }
 
 class darwin_shared extends LLVM_Darwin {

@@ -33,25 +33,32 @@ export async function run(
 
 async function build(targets: Array<Target>, args: string[]) {
   const cmds: ICommand[] = [];
-  const names = targets.map((t) => t.name);
+
+  const targetsMap = targets
+    .map((t) => flatTarget(t))
+    .flat()
+    .reduce((a, b) => ({ ...a, ...b }), {});
+
+  const keys = Object.keys(targetsMap);
+
   for (const arg of args) {
-    if (!names.includes(arg)) {
+    if (!keys.find((k) => k === arg || k.startsWith(arg + ':'))) {
       Log.e('Unknown target', yellow(arg));
       process.exit(0);
     }
   }
-  const classes = targets
-    .filter((t) => {
+
+  const filteredKeys = keys
+    .filter((k) => {
       if (!args.length) return true;
-      return args.includes(t.name);
+      return args.find((a) => a === k || k.startsWith(a + ':'));
     })
-    .map((t) => flatTarget(t))
     .flat();
 
   let ci = 0;
-  for (const Class of classes) {
-    const obj = new Class();
-    const ms = await obj.generateCommands(!ci, ci === classes.length - 1);
+  for (const k of filteredKeys) {
+    const obj = new targetsMap[k]();
+    const ms = await obj.generateCommands(!ci, ci === filteredKeys.length - 1);
     cmds.splice(cmds.length, 0, ...ms);
     ++ci;
   }
@@ -81,19 +88,28 @@ async function build(targets: Array<Target>, args: string[]) {
 }
 
 async function clean(targets: Array<{ new (): Toolchain }>, args: string[]) {
-  const names = targets.map((t) => t.name);
+  const targetsMap = targets
+    .map((t) => flatTarget(t))
+    .flat()
+    .reduce((a, b) => ({ ...a, ...b }), {});
+
+  const keys = Object.keys(targetsMap);
+
   for (const arg of args) {
-    if (!names.includes(arg)) {
+    if (!keys.find((k) => k === arg || k.startsWith(arg + ':'))) {
       Log.e('Unknown target', yellow(arg));
       process.exit(0);
     }
   }
-  const classes = targets.filter((t) => {
-    if (!args.length) return true;
-    return args.includes(t.name);
-  });
-  for (const Class of classes) {
-    const obj = new Class();
+
+  const filteredKeys = keys
+    .filter((k) => {
+      if (!args.length) return true;
+      return args.find((a) => a === k || k.startsWith(a + ':'));
+    })
+    .flat();
+  for (const k of filteredKeys) {
+    const obj = new targetsMap[k]();
     await obj.clean();
   }
 }
