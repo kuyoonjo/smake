@@ -19,6 +19,17 @@ export abstract class Toolchain {
     return '.' + this.constructor.name;
   }
 
+  readonly deps: Set<any> = new Set();
+
+  addDeps(...deps: any[]) {
+    for (const dep of deps) {
+      if (!this.deps.has(dep)) {
+        this.deps.add(dep);
+        dep(this);
+      }
+    }
+  }
+
   abstract generateCommands(first: boolean, last: boolean): Promise<ICommand[]>;
 
   async clean() {

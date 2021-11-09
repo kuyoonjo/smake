@@ -1,9 +1,12 @@
 import { execSync } from 'child_process';
 import { magenta } from 'colors/safe';
-import { mkdirSync, rmSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, rmSync, writeFileSync } from 'fs';
+import { homedir } from '../homedir';
 import { join } from '../join';
 import { quote } from '../quote';
 import { ICommand, Toolchain } from '../Toolchain';
+
+const PREBUILT_DIR = homedir() + '/.smake-prebuilt';
 
 export abstract class LLVM extends Toolchain {
   abstract get files(): string[];
@@ -194,40 +197,40 @@ export abstract class LLVM extends Toolchain {
       },
       process.argv.includes('--compdb')
         ? {
-            label: magenta(`Compdb ${this.name}`),
-            cmd: '',
-            fn: async () => {
-              try {
-                let cmd = `ninja -f ${this.ninjaFilePath} -t compdb`;
-                const json = execSync(cmd).toString();
-                const arr = JSON.parse(json);
-                if (first) LLVM.__compdb = [];
-                LLVM.__compdb = LLVM.__compdb.concat(arr);
-                if (last)
-                  writeFileSync(
-                    this.compdbFilePath,
-                    JSON.stringify(LLVM.__compdb, null, 2)
-                  );
-              } catch {
-                throw '';
-              }
-            },
-          }
-        : {
-            label: magenta(`Building ${this.name}`),
-            cmd: '',
-            fn: async () => {
-              try {
-                let cmd = `ninja -f ${this.ninjaFilePath}`;
-                if (process.argv.includes('--verbose')) cmd += ' --verbose';
-                execSync(cmd, {
-                  stdio: 'inherit',
-                });
-              } catch {
-                throw '';
-              }
-            },
+          label: magenta(`Compdb ${this.name}`),
+          cmd: '',
+          fn: async () => {
+            try {
+              let cmd = `ninja -f ${this.ninjaFilePath} -t compdb`;
+              const json = execSync(cmd).toString();
+              const arr = JSON.parse(json);
+              if (first) LLVM.__compdb = [];
+              LLVM.__compdb = LLVM.__compdb.concat(arr);
+              if (last)
+                writeFileSync(
+                  this.compdbFilePath,
+                  JSON.stringify(LLVM.__compdb, null, 2)
+                );
+            } catch {
+              throw '';
+            }
           },
+        }
+        : {
+          label: magenta(`Building ${this.name}`),
+          cmd: '',
+          fn: async () => {
+            try {
+              let cmd = `ninja -f ${this.ninjaFilePath}`;
+              if (process.argv.includes('--verbose')) cmd += ' --verbose';
+              execSync(cmd, {
+                stdio: 'inherit',
+              });
+            } catch {
+              throw '';
+            }
+          },
+        },
     ];
   }
 
@@ -289,9 +292,8 @@ export abstract class LLVM extends Toolchain {
     const res = this.files.map((f) => {
       const out = join(outDir, f.replace(/\.\./g, '_') + this.objOutSuffix);
       return {
-        cmd: `build ${out}: ${this.constructor.name}_${
-          this.isCXXFile(f) ? 'CXX' : this.isASMFile(f) ? 'ASM' : 'CC'
-        } ${f}`,
+        cmd: `build ${out}: ${this.constructor.name}_${this.isCXXFile(f) ? 'CXX' : this.isASMFile(f) ? 'ASM' : 'CC'
+          } ${f}`,
         out,
       };
     });
@@ -304,16 +306,15 @@ export abstract class LLVM extends Toolchain {
     const linker = this.prefix + this.ld;
     return [
       `rule ${this.constructor.name}_LD`,
-      `  command = ${
-        [
-          linker,
-          ...this.linkdirs.map((x) => `-L${quote(x)}`),
-          ...this.libs.map(
-            (x: any) =>
-              `-l${typeof x === 'string' ? x : new x().outputFileBasename}`
-          ),
-          ...this.ldflags,
-        ].join(' ') + this.debugFlags
+      `  command = ${[
+        linker,
+        ...this.linkdirs.map((x) => `-L${quote(x)}`),
+        ...this.libs.map(
+          (x: any) =>
+            `-l${typeof x === 'string' ? x : new x().outputFileBasename}`
+        ),
+        ...this.ldflags,
+      ].join(' ') + this.debugFlags
       } $in -o $out`,
       '',
       `build ${distFile}: ${this.constructor.name}_LD ${objFiles.join(' ')}`,
@@ -324,17 +325,16 @@ export abstract class LLVM extends Toolchain {
     const linker = this.prefix + this.sh;
     return [
       `rule ${this.constructor.name}_SH`,
-      `  command = ${
-        [
-          linker,
-          ...this.linkdirs.map((x) => `-L${quote(x)}`),
-          ...this.libs.map(
-            (x: any) =>
-              `-l${typeof x === 'string' ? x : new x().outputFileBasename}`
-          ),
-          ...this.shflags,
-          '-shared',
-        ].join(' ') + this.debugFlags
+      `  command = ${[
+        linker,
+        ...this.linkdirs.map((x) => `-L${quote(x)}`),
+        ...this.libs.map(
+          (x: any) =>
+            `-l${typeof x === 'string' ? x : new x().outputFileBasename}`
+        ),
+        ...this.shflags,
+        '-shared',
+      ].join(' ') + this.debugFlags
       } $in -o $out`,
       '',
       `build ${distFile}: ${this.constructor.name}_SH ${objFiles.join(' ')}`,
@@ -347,7 +347,7 @@ export abstract class LLVM extends Toolchain {
       `rule ${this.constructor.name}_AR`,
       `  command = ${[linker, ...this.arflags].join(
         ' '
-      )} cr $out $in ${this.arobjs.join(' ')}`,
+      )} crs $out $in ${this.arobjs.join(' ')}`,
       '',
       `build ${distFile}: ${this.constructor.name}_AR ${objFiles.join(' ')}`,
     ].join('\n');
@@ -361,5 +361,25 @@ export abstract class LLVM extends Toolchain {
     rmSync(this.ninjaFilePath, {
       force: true,
     });
+  }
+
+  addPrebuiltDeps(lib: string, version: string) {
+    const dir = join(PREBUILT_DIR, lib, version, this.target);
+    const incDir = join(dir, 'include');
+    const libDir = join(dir, 'lib');
+    if (existsSync(incDir))
+      Object.defineProperty(this, 'includedirs', {
+        value: [
+          ...this.includedirs,
+          incDir,
+        ],
+      });
+    if (existsSync(libDir))
+      Object.defineProperty(this, 'linkdirs', {
+        value: [
+          ...this.linkdirs,
+          incDir,
+        ],
+      });
   }
 }
