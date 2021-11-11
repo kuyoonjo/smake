@@ -364,9 +364,12 @@ export abstract class LLVM extends Toolchain {
   }
 
   addPrebuiltDeps(lib: string, version: string) {
-    const dir = join(PREBUILT_DIR, lib, version, this.target);
-    const incDir = join(dir, 'include');
-    const libDir = join(dir, 'lib');
+    const dir = this.target.includes('windows')
+      ? this.target + '-MT'
+      : this.target;
+    const pDir = join(PREBUILT_DIR, lib, version);
+    const incDir = join(pDir, dir, 'include');
+    const libDir = join(pDir, dir, 'lib');
     if (existsSync(incDir))
       Object.defineProperty(this, 'includedirs', {
         value: [
