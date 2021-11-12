@@ -1,44 +1,52 @@
+import { property } from '../property';
 import { LLVM } from './LLVM';
 
-export abstract class LLVM_Darwin extends LLVM {
-  get ARCH() {
-    return 'x86_64';
-  }
-  get target() {
-    switch (this.ARCH) {
-      case 'x86_64':
-        return 'x86_64-apple-darwin13';
-      case 'arm64':
-        return 'arm64-apple-darwin20.3.0';
-      default:
-        return '';
+export class LLVM_Darwin extends LLVM {
+  @property({
+    get: (self) => self._target.split('-')[0],
+    set: (self, _, value) => {
+      self.target = value + '-apple-darwin';
+    },
+  })
+  arch: 'x86_64' | 'arm64' = 'x86_64';
+  @property()
+  target!: 'x86_64-apple-darwin' | 'arm64-apple-darwin';
+
+  @property({
+    get: self => {
+      if (self._cxflags) return self._cxflags;
+      const flags = [`-arch ${self.arch}`, '-Qunused-arguments'];
+      if (self.type === 'shared') flags.push('-fPIC');
+      else if (self.type === 'executable')
+        flags.push('-fvisibility=hidden  -fvisibility-inlines-hidden');
+      return flags;
     }
-  }
-  get name() {
-    return 'Darwin LLVM Builder';
-  }
-  get cxflags() {
-    const flags = [`-arch ${this.ARCH}`, '-Qunused-arguments'];
-    if (this.type === 'shared') flags.push('-fPIC');
-    else if (this.type === 'executable')
-      flags.push('-fvisibility=hidden  -fvisibility-inlines-hidden');
-    return flags;
-  }
-  get ldflags() {
-    const flags = [`-arch ${this.ARCH}`];
-    if (this.libs.length) flags.push('-Xlinker -rpath -Xlinker @loader_path');
-    return flags;
-  }
-  get sharedOutSuffix() {
-    return '.dylib';
-  }
-  get shflags() {
-    const flags = [
-      '-fPIC',
-      `-arch ${this.ARCH}`,
-      `-install_name @rpath/${this.outputFilename}`,
-    ];
-    if (this.libs.length) flags.push('-Xlinker -rpath -Xlinker @loader_path');
-    return flags;
-  }
+  })
+  cxflags!: string[];
+
+  @property({
+    get: self => {
+      if (self._ldflags) return self._ldflags;
+      const flags = [`-arch ${self.arch}`];
+      if (self.libs.length) flags.push('-Xlinker -rpath -Xlinker @loader_path');
+      return flags;
+    }
+  })
+  ldflags!: string[];
+
+  sharedOutSuffix = '.dylib';
+
+  @property({
+    get: self => {
+      if (self._shflags) return self._shflags;
+      const flags = [
+        '-fPIC',
+        `-arch ${self.arch}`,
+        `-install_name @rpath/${self.outputFilename}`,
+      ];
+      if (self.libs.length) flags.push('-Xlinker -rpath -Xlinker @loader_path');
+      return flags;
+    }
+  })
+  shflags!: string[];
 }

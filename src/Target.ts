@@ -2,25 +2,29 @@ import { Toolchain } from './Toolchain';
 
 export interface TargetGroup {
   name: string;
-  targets: Array<Target>;
+  targets: Target[];
 }
 
 export type Target =
   | {
       new (): Toolchain;
     }
+  | Toolchain
   | TargetGroup;
 
 export function flatTarget(
   t: Target,
   prefix = ''
 ): Array<{
-  [k: string]: { new (): Toolchain };
+  [k: string]: Toolchain;
 }> {
-  const x = t as any;
+  let x = t as any;
   if (x.prototype) {
+    x = new x(x.name);
+  }
+  if (x instanceof Toolchain) {
     const obj: any = {};
-    obj[prefix + x.name] = x;
+    obj[prefix + x.id] = x;
     return [obj];
   }
   return x.targets

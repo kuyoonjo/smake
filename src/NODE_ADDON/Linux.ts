@@ -7,18 +7,10 @@ import { join } from '../join';
 import { LLVM_Linux } from '../LLVM/Linux';
 
 export abstract class NODE_ADDON_Linux extends LLVM_Linux {
-  get NODE_VERSION() {
-    return process.version;
-  }
-  get NODE_TYPE() {
-    return 'nodejs';
-  }
-  get type() {
-    return 'shared' as any;
-  }
-  get name() {
-    return 'Linux Node Addon Builder';
-  }
+  NODE_VERSION = process.version;
+  NODE_TYPE = 'nodejs';
+  type: 'shared' = 'shared';
+
   get cxflags() {
     const flags = [
       `--sysroot ${this.sysroot}`,

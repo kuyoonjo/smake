@@ -7,11 +7,13 @@ export const SMAKE_LIB_PATH = __dirname;
 
 export interface ICommand {
   label: string;
-  cmd: string;
+  cmd?: string;
   fn?: () => Promise<void>;
 }
 
 export abstract class Toolchain {
+  constructor(public id: string) {}
+
   get buildDir() {
     return BUILD_DIR;
   }

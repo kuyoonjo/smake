@@ -3,166 +3,126 @@ import { magenta } from 'colors/safe';
 import { existsSync, mkdirSync, rmSync, writeFileSync } from 'fs';
 import { homedir } from '../homedir';
 import { join } from '../join';
+import { property } from '../property';
 import { quote } from '../quote';
 import { ICommand, Toolchain } from '../Toolchain';
 
-const PREBUILT_DIR = homedir() + '/.smake-prebuilt';
+const PREBUILD_DIR = homedir() + '/.conan-prebuild';
 
-export abstract class LLVM extends Toolchain {
-  abstract get files(): string[];
+export class LLVM extends Toolchain {
+  files: string[] = [];
   private static __compdb = [];
-  get name() {
-    return 'LLVM Builder';
-  }
-  get type(): 'executable' | 'shared' | 'static' {
-    return 'executable';
-  }
-  get prefix() {
-    return process.env.SMAKE_LLVM_PREFIX || '';
-  }
-  get cxx() {
-    return 'clang++';
-  }
-  get cc() {
-    return 'clang';
-  }
-  get ld() {
-    return 'clang++';
-  }
-  get sh() {
-    return 'clang++';
-  }
-  get ar() {
-    return 'llvm-ar';
-  }
 
-  get useClangHeaders() {
+  target = '';
+  type: 'executable' | 'shared' | 'static' = 'executable';
+
+  prefix = process.env.SMAKE_LLVM_PREFIX || '';
+  cxx = 'clang++';
+  cc = 'clang';
+  ld = 'clang++';
+  sh = 'clang++';
+  ar = 'llvm-ar';
+
+  useClangHeaders = false;
+
+  includedirs: string[] = [];
+
+  @property({
+    get: (self, key) => {
+      if (self.useClangHeaders && process.env.SMAKE_LLVM_CLANG_PATH)
+        return [process.env.SMAKE_LLVM_CLANG_PATH + '/include', ...self[key]];
+      return self[key];
+    }
+  })
+  sysIncludedirs: string[] = [];
+  linkdirs: string[] = [this.buildDir];
+  libs: Array<string | LLVM> = [];
+  cflags: string[] = [];
+  cxxflags: string[] = [];
+  asmflags: string[] = [];
+  cxflags: string[] = [];
+  ldflags: string[] = [];
+  shflags: string[] = [];
+  arflags: string[] = [];
+  arobjs: string[] = [];
+
+  debugFlags = process.argv.includes('--debug') ? ' -g' : '';
+
+  objOutDirname = 'objs';
+  objOutSuffix = '.o';
+  executableOutPrefix = '';
+  executableOutSuffix = '';
+  sharedOutPrefix = 'lib';
+  sharedOutSuffix = '.so';
+  staticOutPrefix = 'lib';
+  staticOutSuffix = '.a';
+
+  outputFileBasename = this.id;
+
+  @property({
+    get: self => {
+      if (self._outputFilename) return self._outputFilename;
+      switch (self.type) {
+        case 'executable':
+          return (
+            self.executableOutPrefix +
+            self.outputFileBasename +
+            self.executableOutSuffix
+          );
+        case 'shared':
+          return (
+            self.sharedOutPrefix + self.outputFileBasename + self.sharedOutSuffix
+          );
+        case 'static':
+          return (
+            self.staticOutPrefix + self.outputFileBasename + self.staticOutSuffix
+          );
+      }
+    }
+  })
+  outputFilename!: string;
+
+  @property({
+    get: self => {
+      if (self._outputPath) return self._outputPath;
+      return join(self.buildDir, self.outputFilename);
+    }
+  })
+  outputPath!: string;
+
+  @property({
+    get: self => {
+      if (self._ninjaFilePath) return self._ninjaFilePath;
+      return join(self.buildDir, self.id + '.ninja');
+    }
+  })
+  ninjaFilePath!: string;
+
+  compdbFilePath = 'compile_commands.json';
+
+  cFileExts = ['.c'];
+  cxxFileExts = ['.cc', '.cpp', '.cxx', '.C'];
+  asmFileExts = ['.s', '.S', '.asm'];
+
+  isCFile(f: string) {
+    for (const ext of this.cFileExts)
+      if (f.endsWith(ext))
+        return true;
     return false;
   }
 
-  get includedirs(): string[] {
-    return [];
-  }
-  get sysIncludedirs(): string[] {
-    if (this.useClangHeaders && process.env.SMAKE_LLVM_CLANG_PATH)
-      return [process.env.SMAKE_LLVM_CLANG_PATH + '/include'];
-    return [];
-  }
-  get linkdirs(): string[] {
-    return [this.buildDir];
-  }
-  get libs(): Array<string | LLVM> {
-    return [];
-  }
-  get cflags(): string[] {
-    return [];
-  }
-  get cxxflags(): string[] {
-    return [];
-  }
-  get asmflags(): string[] {
-    return [];
-  }
-  get cxflags(): string[] {
-    return [];
-  }
-  get ldflags(): string[] {
-    return [];
-  }
-  get shflags(): string[] {
-    return [];
-  }
-  get arflags(): string[] {
-    return [];
-  }
-  get arobjs(): string[] {
-    return [];
-  }
-
-  get debugFlags(): string {
-    if (process.argv.includes('--debug')) return ' -g';
-    return '';
-  }
-
-  get target() {
-    return '';
-  }
-
-  get objOutDirname() {
-    return 'objs';
-  }
-  get objOutSuffix() {
-    return '.o';
-  }
-  get executableOutPrefix() {
-    return '';
-  }
-  get executableOutSuffix() {
-    return '';
-  }
-  get sharedOutPrefix() {
-    return 'lib';
-  }
-  get sharedOutSuffix() {
-    return '.so';
-  }
-  get staticOutPrefix() {
-    return 'lib';
-  }
-  get staticOutSuffix() {
-    return '.a';
-  }
-
-  get outputFileBasename() {
-    return this.constructor.name;
-  }
-
-  get outputFilename() {
-    switch (this.type) {
-      case 'executable':
-        return (
-          this.executableOutPrefix +
-          this.outputFileBasename +
-          this.executableOutSuffix
-        );
-      case 'shared':
-        return (
-          this.sharedOutPrefix + this.outputFileBasename + this.sharedOutSuffix
-        );
-      case 'static':
-        return (
-          this.staticOutPrefix + this.outputFileBasename + this.staticOutSuffix
-        );
-    }
-  }
-
-  get outputPath() {
-    return join(this.buildDir, this.outputFilename);
-  }
-
-  get ninjaFilePath() {
-    return join(this.buildDir, this.constructor.name + '.ninja');
-  }
-
-  get compdbFilePath() {
-    return 'compile_commands.json';
-  }
-
-  isCFile(f: string) {
-    return f.endsWith('.c');
-  }
-
   isCXXFile(f: string) {
-    return (
-      f.endsWith('.cc') ||
-      f.endsWith('.cpp') ||
-      f.endsWith('.cxx') ||
-      f.endsWith('.C')
-    );
+    for (const ext of this.cxxFileExts)
+      if (f.endsWith(ext))
+        return true;
+    return false;
   }
 
   isASMFile(f: string) {
-    return f.endsWith('.s') || f.endsWith('.S') || f.endsWith('.asm');
+    for (const ext of this.asmFileExts)
+      if (f.endsWith(ext))
+        return true;
+    return false;
   }
 
   async generateCommands(first: boolean, last: boolean): Promise<ICommand[]> {
@@ -188,7 +148,7 @@ export abstract class LLVM extends Toolchain {
     content.push('');
     return [
       {
-        label: magenta(`Generating build.ninja for ${this.name}`),
+        label: magenta(`Generating build.ninja for ${this.id}`),
         cmd: '',
         fn: async () => {
           mkdirSync(this.buildDir, { recursive: true });
@@ -197,7 +157,7 @@ export abstract class LLVM extends Toolchain {
       },
       process.argv.includes('--compdb')
         ? {
-          label: magenta(`Compdb ${this.name}`),
+          label: magenta(`Compdb ${this.id}`),
           cmd: '',
           fn: async () => {
             try {
@@ -217,7 +177,7 @@ export abstract class LLVM extends Toolchain {
           },
         }
         : {
-          label: magenta(`Building ${this.name}`),
+          label: magenta(`Building ${this.id}`),
           cmd: '',
           fn: async () => {
             try {
@@ -245,7 +205,7 @@ export abstract class LLVM extends Toolchain {
         ...this.cxflags,
       ].join(' ') + this.debugFlags;
     return [
-      `rule ${this.constructor.name}_CC`,
+      `rule ${this.id}_CC`,
       '  depfile = $out.d',
       `  command = ${compiler} -MD -MF $out.d ${flags} -c $in -o $out`,
     ].join('\n');
@@ -263,7 +223,7 @@ export abstract class LLVM extends Toolchain {
       ].join(' ') + this.debugFlags;
 
     return [
-      `rule ${this.constructor.name}_CXX`,
+      `rule ${this.id}_CXX`,
       '  depfile = $out.d',
       `  command = ${compiler} -MD -MF $out.d ${flags} -c $in -o $out`,
     ].join('\n');
@@ -280,7 +240,7 @@ export abstract class LLVM extends Toolchain {
         ...this.asmflags,
       ].join(' ') + this.debugFlags;
     return [
-      `rule ${this.constructor.name}_ASM`,
+      `rule ${this.id}_ASM`,
       '  depfile = $out.d',
       `  command = ${compiler} -MD -MF $out.d ${flags} -c $in -o $out`,
     ].join('\n');
@@ -292,7 +252,7 @@ export abstract class LLVM extends Toolchain {
     const res = this.files.map((f) => {
       const out = join(outDir, f.replace(/\.\./g, '_') + this.objOutSuffix);
       return {
-        cmd: `build ${out}: ${this.constructor.name}_${this.isCXXFile(f) ? 'CXX' : this.isASMFile(f) ? 'ASM' : 'CC'
+        cmd: `build ${out}: ${this.id}_${this.isCXXFile(f) ? 'CXX' : this.isASMFile(f) ? 'ASM' : 'CC'
           } ${f}`,
         out,
       };
@@ -305,7 +265,7 @@ export abstract class LLVM extends Toolchain {
   async buildExecutable(objFiles: string[], distFile: string) {
     const linker = this.prefix + this.ld;
     return [
-      `rule ${this.constructor.name}_LD`,
+      `rule ${this.id}_LD`,
       `  command = ${[
         linker,
         ...this.linkdirs.map((x) => `-L${quote(x)}`),
@@ -317,14 +277,14 @@ export abstract class LLVM extends Toolchain {
       ].join(' ') + this.debugFlags
       } $in -o $out`,
       '',
-      `build ${distFile}: ${this.constructor.name}_LD ${objFiles.join(' ')}`,
+      `build ${distFile}: ${this.id}_LD ${objFiles.join(' ')}`,
     ].join('\n');
   }
 
   async buildShared(objFiles: string[], distFile: string) {
     const linker = this.prefix + this.sh;
     return [
-      `rule ${this.constructor.name}_SH`,
+      `rule ${this.id}_SH`,
       `  command = ${[
         linker,
         ...this.linkdirs.map((x) => `-L${quote(x)}`),
@@ -337,19 +297,19 @@ export abstract class LLVM extends Toolchain {
       ].join(' ') + this.debugFlags
       } $in -o $out`,
       '',
-      `build ${distFile}: ${this.constructor.name}_SH ${objFiles.join(' ')}`,
+      `build ${distFile}: ${this.id}_SH ${objFiles.join(' ')}`,
     ].join('\n');
   }
 
   async buildStatic(objFiles: string[], distFile: string) {
     const linker = this.prefix + this.ar;
     return [
-      `rule ${this.constructor.name}_AR`,
+      `rule ${this.id}_AR`,
       `  command = ${[linker, ...this.arflags].join(
         ' '
       )} crs $out $in ${this.arobjs.join(' ')}`,
       '',
-      `build ${distFile}: ${this.constructor.name}_AR ${objFiles.join(' ')}`,
+      `build ${distFile}: ${this.id}_AR ${objFiles.join(' ')}`,
     ].join('\n');
   }
 
@@ -363,26 +323,20 @@ export abstract class LLVM extends Toolchain {
     });
   }
 
-  addPrebuiltDeps(lib: string, version: string) {
+  addPrebuild(lib: string, version: string) {
     const dir = this.target.includes('windows')
       ? this.target + '-MT'
       : this.target;
-    const pDir = join(PREBUILT_DIR, lib, version);
+    const pDir = join(PREBUILD_DIR, lib, version);
     const incDir = join(pDir, dir, 'include');
     const libDir = join(pDir, dir, 'lib');
     if (existsSync(incDir))
       Object.defineProperty(this, 'includedirs', {
-        value: [
-          ...this.includedirs,
-          incDir,
-        ],
+        value: [...this.includedirs, incDir],
       });
     if (existsSync(libDir))
       Object.defineProperty(this, 'linkdirs', {
-        value: [
-          ...this.linkdirs,
-          incDir,
-        ],
+        value: [...this.linkdirs, incDir],
       });
   }
 }

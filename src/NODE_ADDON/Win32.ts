@@ -10,22 +10,11 @@ import { quote } from '../quote';
 import { SMAKE_LIB_PATH } from '../Toolchain';
 
 export abstract class NODE_ADDON_Win32 extends LLVM_Win32 {
-  get NODE_VERSION() {
-    return process.version;
-  }
-  get NODE_TYPE() {
-    return 'nodejs';
-  }
-  get type() {
-    return 'shared' as any;
-  }
-  get name() {
-    return 'Win32 Node Addon Builder';
-  }
+  NODE_VERSION = process.version;
+  NODE_TYPE = 'nodejs';
+  type: 'shared' = 'shared';
 
-  get sh() {
-    return 'lld-link';
-  }
+  useLldLink = true;
 
   get cxflags() {
     const flags = [...super.cxflags, '-Daddon_EXPORTS', '-DNDEBUG'];

@@ -3,17 +3,14 @@ import * as colors from 'colors/safe';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { Log } from './Log';
 import { flatTarget, Target } from './Target';
-import { ICommand, Toolchain } from './Toolchain';
+import { ICommand } from './Toolchain';
 import * as cj from 'comment-json';
 import { LLVM } from '.';
 
 const yellow = colors.yellow;
 const brightGreen = (colors as any).brightGreen as (str: string) => string;
 
-export async function run(
-  targets: Array<{ new (): Toolchain }>,
-  args: string[]
-) {
+export async function run(targets: Target[], args: string[]) {
   const fn: 'build' | 'clean' | 'ide' = (args[0] as any) || 'build';
   switch (fn) {
     case 'build':
@@ -66,7 +63,7 @@ async function build(targets: Array<Target>, args: string[]) {
 
   let ci = 0;
   for (const k of filteredKeys) {
-    const obj = new targetsMap[k]();
+    const obj = targetsMap[k];
     const ms = await obj.generateCommands(!ci, ci === filteredKeys.length - 1);
     cmds.splice(cmds.length, 0, ...ms);
     ++ci;
@@ -84,7 +81,7 @@ async function build(targets: Array<Target>, args: string[]) {
       if (c.fn) await c.fn();
       else {
         console.log(c.cmd);
-        execSync(c.cmd, { stdio: 'inherit' });
+        execSync(c.cmd!, { stdio: 'inherit' });
       }
     } catch (e) {
       e && Log.e(e);
@@ -96,7 +93,7 @@ async function build(targets: Array<Target>, args: string[]) {
   Log.i(brightGreen('[100%]'), colors.magenta('Done'));
 }
 
-async function clean(targets: Array<{ new (): Toolchain }>, args: string[]) {
+async function clean(targets: Target[], args: string[]) {
   const targetsMap = targets
     .map((t) => flatTarget(t))
     .flat()
@@ -118,12 +115,12 @@ async function clean(targets: Array<{ new (): Toolchain }>, args: string[]) {
     })
     .flat();
   for (const k of filteredKeys) {
-    const obj = new targetsMap[k]();
+    const obj = targetsMap[k];
     await obj.clean();
   }
 }
 
-async function ide(targets: Array<{ new (): Toolchain }>) {
+async function ide(targets: Target[]) {
   const targetsMap = targets
     .map((t) => flatTarget(t))
     .flat()
@@ -247,7 +244,7 @@ function ideVscodeLaunch(keys: string[], targetsMap: any) {
   }
 
   for (const k of keys) {
-    const obj = new targetsMap[k]();
+    const obj = targetsMap[k];
     if (obj.type !== 'executable') continue;
     if (!(obj instanceof LLVM)) continue;
     const debugLabel = 'Build debug ' + k;
