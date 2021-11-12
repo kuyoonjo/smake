@@ -7,9 +7,9 @@ export abstract class LLVM_Darwin extends LLVM {
   get target() {
     switch (this.ARCH) {
       case 'x86_64':
-        return 'x86_64-apple-darwin13';
+        return 'x86_64-apple-darwin';
       case 'arm64':
-        return 'arm64-apple-darwin20.3.0';
+        return 'arm64-apple-darwin';
       default:
         return '';
     }

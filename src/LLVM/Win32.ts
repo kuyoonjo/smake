@@ -40,7 +40,7 @@ export abstract class LLVM_Win32 extends LLVM {
       case 'x86_64':
         return 'x86_64-pc-windows-msvc';
       case 'i386':
-        return 'i386-pc-win32';
+        return 'i386-pc-windows-msvc';
       default:
         return '';
     }
