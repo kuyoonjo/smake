@@ -18,7 +18,7 @@ export abstract class Toolchain {
     return BUILD_DIR;
   }
   get cacheDirname() {
-    return '.' + this.constructor.name;
+    return '.' + this.id;
   }
 
   readonly deps: Set<any> = new Set();

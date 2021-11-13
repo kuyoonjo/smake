@@ -28,7 +28,7 @@ program
     if (opts.verbose) process.argv.push('--verbose');
     if (opts.compdb) process.argv.push('--compdb');
     if (opts.debug) process.argv.push('--debug');
-    run(m.targets, args);
+    run(m, args);
   });
 
 program
@@ -43,7 +43,7 @@ program
     }
     const m = require(file);
     const args = ['clean', ...targets];
-    run(m.targets, args);
+    run(m, args);
   });
 
 program
@@ -58,7 +58,7 @@ program
     }
     const m = require(file);
     const args = ['ide'];
-    run(m.targets, args);
+    run(m, args);
   });
 
 program.on('command:*', (operands: any) => {

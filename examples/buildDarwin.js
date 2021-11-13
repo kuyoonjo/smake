@@ -1,49 +1,28 @@
-const { LLVM_Darwin } = require('../lib');
+const { LLVM } = require('../lib');
 
-// process.env.SMAKE_LLVM_PREFIX = '/opt/homebrew/opt/llvm/bin/';
-const ARCH = 'arm64';
+const executable = new LLVM('executable', 'arm64-apple-darwin');
+executable.files = ['examples/src/main.c'];
 
-class darwin_executable extends LLVM_Darwin {
-  ARCH = ARCH;
-  files = ['src/main.c'];
-}
+const static = new LLVM('static', 'arm64-apple-darwin');
+static.type = 'static';
+static.files = ['examples/src/lib.cpp'];
 
-class darwin_static extends LLVM_Darwin {
-  ARCH = ARCH;
-  type = 'static';
-  files = ['src/lib.cpp'];
-  cxxflags = [
-    ...super.cxxflags,
-    '-g',
-  ];
-}
-class darwin_static_executable extends LLVM_Darwin {
-  ARCH = ARCH;
-  files = ['src/libmain.cpp'];
-  libs = [darwin_static];
-  cxxflags = [
-    ...super.cxxflags,
-    '-g',
-  ];
-}
+const static_executable = new LLVM('static_executable', 'arm64-apple-darwin');
+static_executable.files = ['examples/src/libmain.cpp'];
+static_executable.libs = [static];
 
-class darwin_shared extends LLVM_Darwin {
-  ARCH = ARCH;
-  type = 'shared';
-  files = ['src/dll.cpp'];
-}
-class darwin_shared_executable extends LLVM_Darwin {
-  ARCH = ARCH;
-  files = ['src/dllmain.cpp'];
-  libs = [darwin_shared];
-}
+const shared = new LLVM('shared', 'arm64-apple-darwin');
+shared.type = 'shared';
+shared.files = ['examples/src/dll.cpp'];
 
-module.exports = {
-  targets: [
-    darwin_executable,
-    darwin_static,
-    darwin_static_executable,
-    darwin_shared,
-    darwin_shared_executable,
-  ]
-};
+const shared_executable = new LLVM('shared_executable', 'arm64-apple-darwin');
+shared_executable.files = ['examples/src/dllmain.cpp'];
+shared_executable.libs = [shared];
+
+module.exports = [
+  executable,
+  static,
+  static_executable,
+  shared,
+  shared_executable,
+];
