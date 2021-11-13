@@ -4,6 +4,8 @@
 
 # 交叉编译系统
 
+> 注：v1 版本与 v0.x 版本不兼容
+
 ## 依赖
 - [LLVM >= 11](https://github.com/llvm/llvm-project/releases)
 - [Nodejs >= 11.15](https://npm.taobao.org/mirrors/node)
@@ -71,56 +73,18 @@ export NVM_NODEJS_ORG_MIRROR=http://npm.taobao.org/mirrors/node
 
 - 在项目目录下创建 `package.json` 文件。
 - 安装项目依赖 `npm i -D smake`
-- 在项目目录下创建 `xmake.js` 文件。
+- 在项目目录下创建 `smake.js` 文件。
 
-> Linux
 ```js
-const { LLVM_Linux } = require('smake');
+const { LLVM } = require('smake');
 
-class linux_executable extends LLVM_Linux {
-  target = 'aarch-linux-gnu';
-  files = ['src/main.c'];
-}
+const executable = new LLVM('executable', 'aarch64-linux-gnu');
+executable.files = ['src/main.c'];
 
-module.exports = {
-  targets: [
-    linux_executable,
-  ],
-};
+module.exports = [
+  executable,
+];
 ```
-运行 `smake build` 编译。
-
-> Windows
-```js
-const { LLVM_Win32 } = require('smake');
-
-class win32_executable extends LLVM_Win32 {
-  files = ['src/main.c'];
-}
-
-module.exports = {
-  targets: [
-    win32_executable,
-  ],
-};
-```
-运行 `smake build` 编译。
-
-> macOS
-```js
-const { LLVM_Darwin } = require('smake');
-
-class darwin_executable extends LLVM_Darwin {
-  ARCH = 'arm64';
-  files = ['src/main.c'];
-}
-
-module.exports = {
-  targets: [
-    darwin_executable,
-  ],
-};
-```
-运行 `smake build` 编译。
+运行 `npx smake build` 编译。
 
 更多请查看 `examples` 目录。
