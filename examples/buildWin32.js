@@ -1,6 +1,6 @@
-const targets = require('./buildDarwin');
+const build = require('./build');
 
-for (const t of targets)
-  t.target = 'x86_64-pc-windows-msvc';
-
-module.exports = targets;
+module.exports = [
+  ...build('x86_64-pc-windows-msvc'),
+  ...build('i386-pc-windows-msvc'),
+];

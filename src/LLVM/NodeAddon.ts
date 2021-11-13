@@ -57,6 +57,7 @@ export class NodeAddon extends LLVM {
       switch (this.platform) {
         case 'darwin':
           return [
+            `-target ${this.target}`,
             '-fPIC',
             `-install_name @rpath/${this.outputFilename}`,
             '-D_DARWIN_USE_64_BIT_INODE=1',

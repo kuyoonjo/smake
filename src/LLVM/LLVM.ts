@@ -1,12 +1,9 @@
 import { execSync } from 'child_process';
 import { cyan, green, magenta, yellow } from 'colors/safe';
-import { copyFileSync, existsSync, mkdirSync, rmSync, writeFileSync } from 'fs';
-import { homedir } from '../homedir';
+import { copyFileSync, mkdirSync, rmSync, writeFileSync } from 'fs';
 import { join } from '../join';
 import { quote } from '../quote';
 import { ICommand, Toolchain } from '../Toolchain';
-
-const PREBUILD_DIR = homedir() + '/.conan-prebuild';
 
 type TargetType =
   | 'x86_64-apple-darwin'
@@ -49,6 +46,10 @@ export class LLVM extends Toolchain {
     this._target = v;
   }
 
+  stdc: 'c99' | 'c11' | 'c17' | 'c18' = 'c17';
+  stdcxx: 'c++98' | 'c++03' | 'c++11' | 'c++14' | 'c++17' | 'c++20' | 'c++2a' =
+    'c++17';
+
   get platform() {
     if (this.target.includes('darwin')) return 'darwin';
     if (this.target.includes('windows')) return 'win32';
@@ -80,7 +81,10 @@ export class LLVM extends Toolchain {
 
   protected _prefix!: string;
   get prefix() {
-    if (this._prefix === undefined) return process.env.SMAKE_LLVM_PREFIX || '';
+    if (this._prefix === undefined) {
+      if (this.platform === 'darwin') return '';
+      return process.env.SMAKE_LLVM_PREFIX || '';
+    }
     return this._prefix || '';
   }
   set prefix(v) {
@@ -336,6 +340,7 @@ export class LLVM extends Toolchain {
         case 'darwin':
           return (() => {
             const flags = [
+              `-target ${this.target}`,
               '-fPIC',
               `-install_name @rpath/${this.outputFilename}`,
             ];
@@ -697,7 +702,7 @@ export class LLVM extends Toolchain {
     return [
       `rule _CC`,
       '  depfile = $out.d',
-      `  command = ${compiler} -MD -MF $out.d ${flags} -c $in -o $out`,
+      `  command = ${compiler} -MD -MF $out.d ${flags} -std=${this.stdc}  -c $in -o $out`,
     ].join('\n');
   }
 
@@ -715,7 +720,7 @@ export class LLVM extends Toolchain {
     return [
       `rule _CXX`,
       '  depfile = $out.d',
-      `  command = ${compiler} -MD -MF $out.d ${flags} -c $in -o $out`,
+      `  command = ${compiler} -MD -MF $out.d ${flags} -std=${this.stdcxx} -c $in -o $out`,
     ].join('\n');
   }
 
@@ -882,22 +887,5 @@ export class LLVM extends Toolchain {
         force: true,
       });
     }
-  }
-
-  addPrebuild(lib: string, version: string) {
-    const dir = this.target.includes('windows')
-      ? this.target + '-MT'
-      : this.target;
-    const pDir = join(PREBUILD_DIR, lib, version);
-    const incDir = join(pDir, dir, 'include');
-    const libDir = join(pDir, dir, 'lib');
-    if (existsSync(incDir))
-      Object.defineProperty(this, 'includedirs', {
-        value: [...this.includedirs, incDir],
-      });
-    if (existsSync(libDir))
-      Object.defineProperty(this, 'linkdirs', {
-        value: [...this.linkdirs, incDir],
-      });
   }
 }

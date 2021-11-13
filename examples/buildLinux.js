@@ -1,6 +1,7 @@
-const targets = require('./buildDarwin');
+const build = require('./build');
 
-for (const t of targets)
-  t.target = 'aarch64-linux-gnu';
-
-module.exports = targets;
+module.exports = [
+  ...build('aarch64-linux-gnu'),
+  ...build('x86_64-linux-gnu'),
+  ...build('arm-linux-gnueabihf'),
+];
