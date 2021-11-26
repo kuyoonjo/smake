@@ -255,8 +255,8 @@ export class LLVM extends Toolchain {
           return (() => {
             const flags = ['-Qunused-arguments'];
             if (this.type === 'shared') flags.push('-fPIC');
-            else if (this.type === 'executable')
-              flags.push('-fvisibility=hidden  -fvisibility-inlines-hidden');
+            // else if (this.type === 'executable')
+            //   flags.push('-fvisibility=hidden  -fvisibility-inlines-hidden');
             return flags;
           })();
         case 'win32':
@@ -271,16 +271,16 @@ export class LLVM extends Toolchain {
               '-D_WINDOWS',
               `-D_MSC_VER=${this.MSVC_VERSION}`,
             ];
-            if (this.type === 'executable')
-              flags.push('-fvisibility=hidden  -fvisibility-inlines-hidden');
+            // if (this.type === 'executable')
+            //   flags.push('-fvisibility=hidden  -fvisibility-inlines-hidden');
             return flags;
           })();
         case 'linux':
           return (() => {
             const flags = [`--sysroot ${this.sysroot}`, '-Qunused-arguments'];
             if (this.type === 'shared') flags.push('-fPIC');
-            else if (this.type === 'executable')
-              flags.push('-fvisibility=hidden  -fvisibility-inlines-hidden');
+            // else if (this.type === 'executable')
+            //   flags.push('-fvisibility=hidden  -fvisibility-inlines-hidden');
             return flags;
           })();
         case 'none':
