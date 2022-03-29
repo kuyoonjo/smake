@@ -57,6 +57,7 @@ export class LLVM extends Toolchain {
     if (this.target.includes('windows')) return 'win32';
     if (this.target.includes('win32')) return 'win32';
     if (this.target.includes('linux')) return 'linux';
+    if (this.target.includes('wasm')) return 'wasm';
     return 'none';
   }
 
@@ -285,6 +286,17 @@ export class LLVM extends Toolchain {
             //   flags.push('-fvisibility=hidden  -fvisibility-inlines-hidden');
             return flags;
           })();
+        case 'wasm':
+          return (() => {
+            const flags = [
+              `--sysroot ${this.sysroot}`,
+              '-Qunused-arguments',
+              '-Wl,--no-entry',
+              '-Wl,--export-all',
+            ];
+            if (this.type === 'shared') flags.push('-fPIC');
+            return flags;
+          })();
         case 'none':
           return (() => {
             return [];
@@ -326,6 +338,18 @@ export class LLVM extends Toolchain {
               `-target ${this.target}${this.targetPlatformVersion}`,
             ];
             if (this.libs.length) flags.push(`-Wl,-rpath,'$$ORIGIN'`);
+            return flags;
+          })();
+        case 'wasm':
+          return (() => {
+            const flags = [
+              `--sysroot ${this.sysroot}`,
+              '-fuse-ld=lld',
+              `-target ${this.target}${this.targetPlatformVersion}`,
+              '-Wl,--no-entry',
+              '-Wl,--export-all',
+              '-nostdlib',
+            ];
             return flags;
           })();
         case 'none':
@@ -372,6 +396,19 @@ export class LLVM extends Toolchain {
               `-target ${this.target}${this.targetPlatformVersion}`,
               '-fPIC',
               '-shared',
+            ];
+          })();
+        case 'wasm':
+          return (() => {
+            return [
+              `--sysroot ${this.sysroot}`,
+              '-fuse-ld=lld',
+              `-target ${this.target}${this.targetPlatformVersion}`,
+              '-fPIC',
+              '-shared',
+              '-Wl,--no-entry',
+              '-Wl,--export-all',
+              '-nostdlib',
             ];
           })();
         case 'none':
@@ -445,6 +482,8 @@ export class LLVM extends Toolchain {
       switch (this.platform) {
         case 'win32':
           return '.exe';
+        case 'wasm':
+          return '.wasm';
         default:
           return '';
       }
