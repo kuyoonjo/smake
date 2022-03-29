@@ -50,6 +50,8 @@ export class LLVM extends Toolchain {
   stdcxx: 'c++98' | 'c++03' | 'c++11' | 'c++14' | 'c++17' | 'c++20' | 'c++2a' =
     'c++17';
 
+  target_platform_version = '';
+
   get platform() {
     if (this.target.includes('darwin')) return 'darwin';
     if (this.target.includes('windows')) return 'win32';
@@ -301,7 +303,9 @@ export class LLVM extends Toolchain {
       switch (this.platform) {
         case 'darwin':
           return (() => {
-            const flags = [`-target ${this.target}`];
+            const flags = [
+              `-target ${this.target}${this.target_platform_version}`,
+            ];
             if (this.libs.length)
               flags.push('-Xlinker -rpath -Xlinker @loader_path');
             return flags;
@@ -309,14 +313,17 @@ export class LLVM extends Toolchain {
         case 'win32':
           return (() => {
             if (this.useLldLink) return [];
-            return ['-fuse-ld=lld', `-target ${this.target}`];
+            return [
+              '-fuse-ld=lld',
+              `-target ${this.target}${this.target_platform_version}`,
+            ];
           })();
         case 'linux':
           return (() => {
             const flags = [
               `--sysroot ${this.sysroot}`,
               '-fuse-ld=lld',
-              `-target ${this.target}`,
+              `-target ${this.target}${this.target_platform_version}`,
             ];
             if (this.libs.length) flags.push(`-Wl,-rpath,'$$ORIGIN'`);
             return flags;
@@ -340,7 +347,7 @@ export class LLVM extends Toolchain {
         case 'darwin':
           return (() => {
             const flags = [
-              `-target ${this.target}`,
+              `-target ${this.target}${this.target_platform_version}`,
               '-fPIC',
               `-install_name @rpath/${this.outputFilename}`,
             ];
@@ -351,14 +358,18 @@ export class LLVM extends Toolchain {
         case 'win32':
           return (() => {
             if (this.useLldLink) return ['/DLL'];
-            return ['-shared', '-fuse-ld=lld', `-target ${this.target}`];
+            return [
+              '-shared',
+              '-fuse-ld=lld',
+              `-target ${this.target}${this.target_platform_version}`,
+            ];
           })();
         case 'linux':
           return (() => {
             return [
               `--sysroot ${this.sysroot}`,
               '-fuse-ld=lld',
-              `-target ${this.target}`,
+              `-target ${this.target}${this.target_platform_version}`,
               '-fPIC',
               '-shared',
             ];
@@ -691,7 +702,8 @@ export class LLVM extends Toolchain {
 
   async buildCCRules() {
     let compiler = this.prefix + this.cc;
-    if (this.target) compiler += ` -target ${this.target}`;
+    if (this.target)
+      compiler += ` -target ${this.target}${this.target_platform_version}`;
     const flags =
       [
         ...this.sysIncludedirs.map((x) => `-isystem ${quote(x)}`),
@@ -708,7 +720,8 @@ export class LLVM extends Toolchain {
 
   async buildCXXRules() {
     let compiler = this.prefix + this.cxx;
-    if (this.target) compiler += ` -target ${this.target}`;
+    if (this.target)
+      compiler += ` -target ${this.target}${this.target_platform_version}`;
     const flags =
       [
         ...this.sysIncludedirs.map((x) => `-isystem ${quote(x)}`),
@@ -726,7 +739,8 @@ export class LLVM extends Toolchain {
 
   async buildASMRules() {
     let compiler = this.prefix + this.cc;
-    if (this.target) compiler += ` -target ${this.target}`;
+    if (this.target)
+      compiler += ` -target ${this.target}${this.target_platform_version}`;
     const flags =
       [
         ...this.sysIncludedirs.map((x) => `-isystem ${quote(x)}`),
