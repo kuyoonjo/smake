@@ -5,17 +5,27 @@ import { join } from '../join';
 import { quote } from '../quote';
 import { ICommand, Toolchain } from '../Toolchain';
 
-type TargetType =
-  | 'x86_64-apple-darwin'
-  | 'arm64-apple-darwin'
-  | 'x86_64-linux-gnu'
-  | 'aarch64-linux-gnu'
-  | 'arm-linux-gnueabihf'
-  | 'x86_64-pc-windows-msvc'
-  | 'i386-pc-windows-msvc';
+export const CommonTargets = {
+  'x86_64-apple-darwin': 'x86_64-apple-darwin',
+  'arm64-apple-darwin': 'arm64-apple-darwin',
+  'i386-unknown-linux-gnu': 'i386-unknown-linux-gnu',
+  'x86_64-unknown-linux-gnu': 'x86_64-unknown-linux-gnu',
+  'aarch64-unknown-linux-gnu': 'aarch64-unknown-linux-gnu',
+  'arm-unknown-linux-gnueabihf': 'arm-unknown-linux-gnueabihf',
+  'i386-unknown-linux-musl': 'i386-unknown-linux-musl',
+  'x86_64-unknown-linux-musl': 'x86_64-unknown-linux-musl',
+  'aarch64-unknown-linux-musl': 'aarch64-unknown-linux-musl',
+  'arm-unknown-linux-musleabihf': 'arm-unknown-linux-musleabihf',
+  'x86_64-pc-windows-msvc': 'x86_64-pc-windows-msvc',
+  'i686-pc-windows-msvc': 'i686-pc-windows-msvc',
+  'aarch64-pc-windows-msvc': 'aarch64-pc-windows-msvc',
+  'arm-pc-windows-msvc': 'arm-pc-windows-msvc',
+  'wasm32-unknown-wasi': 'wasm32-unknown-wasi',
+  'wasm64-unknown-wasi': 'wasm64-unknown-wasi',
+}
 
 export class LLVM extends Toolchain {
-  constructor(public name: string, target: TargetType) {
+  constructor(public name: string, target: string) {
     super(name + '-' + target);
     this.target = target;
   }
@@ -37,7 +47,7 @@ export class LLVM extends Toolchain {
     this._files = v;
   }
 
-  protected _target!: TargetType;
+  protected _target!: string;
   get target() {
     if (this._target === undefined) return 'arm64-apple-darwin';
     return this._target;
