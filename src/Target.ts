@@ -5,29 +5,20 @@ export interface TargetGroup {
   targets: Target[];
 }
 
-export type Target =
-  | {
-      new (): Toolchain;
-    }
-  | Toolchain
-  | TargetGroup;
+export type Target = Toolchain | TargetGroup;
 
 export function flatTarget(
-  t: Target,
+  t: any,
   prefix = ''
 ): Array<{
   [k: string]: Toolchain;
 }> {
-  let x = t as any;
-  if (x.prototype) {
-    x = new x(x.name);
-  }
-  if (x instanceof Toolchain) {
+  if (t.generateCommands) {
     const obj: any = {};
-    obj[prefix + x.id] = x;
+    obj[prefix + t.id] = t;
     return [obj];
   }
-  return x.targets
-    .map((tt: any) => flatTarget(tt, prefix + x.name + ':'))
+  return t.targets
+    .map((tt: any) => flatTarget(tt, prefix + t.name + ':'))
     .flat(100);
 }
