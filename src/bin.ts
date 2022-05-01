@@ -46,17 +46,37 @@ import { join } from './join';
   const md = modulesDir();
   const dirs = await readdir(md);
   const pluginsDirname = '@smake-plugins';
+  const plugins: Array<{
+    name: string;
+    version: string;
+  }> = [];
   if (dirs.includes(pluginsDirname)) {
     const pdirs = await readdir(join(md, pluginsDirname));
-    for (const p of pdirs) {
-      const m = require(join(pluginsDirname, p));
-      if (m.command) m.command(program);
-    }
+    for (const p of pdirs)
+      plugins.push({
+        name: join(pluginsDirname, p),
+        version: require(join(md, pluginsDirname, p, 'package.json')).version,
+      });
   }
-  const plugins = dirs.filter((d) => d.startsWith('smake-plugin-'));
+  for (const p of dirs.filter((d) => d.startsWith('smake-plugin-')))
+    plugins.push({
+      name: p,
+      version: require(join(md, p, 'package.json')).version,
+    });
   for (const p of plugins) {
-    const m = require(p);
+    const m = require(p.name);
     if (m.command) m.command(program);
+  }
+
+  if (plugins.length) {
+    program
+      .command('plugins')
+      .description('list installed plugins')
+      .action(() => {
+        for (const p of plugins) {
+          console.log(p.name, p.version);
+        }
+      });
   }
 
   program.on('command:*', (operands: any) => {
