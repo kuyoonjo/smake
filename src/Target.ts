@@ -1,17 +1,17 @@
-import { Toolchain } from './Toolchain';
+import { IToolchain } from './Toolchain';
 
-export interface TargetGroup {
+export interface ITargetGroup {
   name: string;
   targets: Target[];
 }
 
-export type Target = Toolchain | TargetGroup;
+export type Target = IToolchain | ITargetGroup;
 
 export function flatTarget(
   t: any,
   prefix = ''
 ): Array<{
-  [k: string]: Toolchain;
+  [k: string]: IToolchain;
 }> {
   if (t.generateCommands) {
     const obj: any = {};

@@ -8,7 +8,6 @@ const yellow = colors.yellow;
 const brightGreen = (colors as any).brightGreen as (str: string) => string;
 
 export async function build(targets: Array<Target>, args: string[], opts: any) {
-  console.log(targets, args, opts);
   const cmds: ICommand[] = [];
 
   const targetsMap = targets
@@ -51,7 +50,6 @@ export async function build(targets: Array<Target>, args: string[], opts: any) {
     try {
       if (typeof c.command === 'function') await c.command(opts);
       else {
-        Log.i(c.command);
         let cp: ChildProcess;
         if (typeof c.command === 'string')
           cp = spawn(c.command, [], { stdio: 'inherit' });
