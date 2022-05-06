@@ -10,6 +10,8 @@ import { build } from './build';
 import { modulesDir } from '.';
 import { readdir } from 'fs/promises';
 import { join } from './join';
+import { ls } from './ls';
+import { isPluginInstalled } from './isPluginInstalled';
 
 (async () => {
   const program = new Command();
@@ -17,6 +19,7 @@ import { join } from './join';
     .name('smake')
     .usage('[command] [options]')
     .command('build [targets...]', { isDefault: true })
+    .description('build targets')
     .option('-v, --verbose', 'verbose output')
     .option('-d, --debug', 'build debug information')
     .option('-f, --file <path>', 'specify the smake build file')
@@ -32,6 +35,7 @@ import { join } from './join';
 
   program
     .command('clean [targets...]')
+    .description('clean targets')
     .option('-f, --file <path>', 'specify the smake build file')
     .action((targets, opts) => {
       const file = resolve(opts.file || 'smake.js');
@@ -43,6 +47,20 @@ import { join } from './join';
       clean(m, targets);
     });
 
+  program
+    .command('ls')
+    .description('list targets')
+    .option('-f, --file <path>', 'specify the smake build file')
+    .action((_, opts) => {
+      const file = resolve(opts.file || 'smake.js');
+      if (!existsSync(file)) {
+        Log.e('Cannot find', yellow(file));
+        process.exit(1);
+      }
+      const m = require(file);
+      ls(m);
+    });
+
   const md = modulesDir();
   const dirs = await readdir(md);
   const pluginsDirname = '@smake-plugins';
@@ -52,17 +70,21 @@ import { join } from './join';
   }> = [];
   if (dirs.includes(pluginsDirname)) {
     const pdirs = await readdir(join(md, pluginsDirname));
-    for (const p of pdirs)
-      plugins.push({
-        name: join(pluginsDirname, p),
-        version: require(join(md, pluginsDirname, p, 'package.json')).version,
-      });
+    for (const p of pdirs) {
+      const pp = join(pluginsDirname, p);
+      if (isPluginInstalled(pp))
+        plugins.push({
+          name: pp,
+          version: require(join(md, pp, 'package.json')).version,
+        });
+    }
   }
   for (const p of dirs.filter((d) => d.startsWith('smake-plugin-')))
-    plugins.push({
-      name: p,
-      version: require(join(md, p, 'package.json')).version,
-    });
+    if (isPluginInstalled(p))
+      plugins.push({
+        name: p,
+        version: require(join(md, p, 'package.json')).version,
+      });
   for (const p of plugins) {
     const m = require(p.name);
     if (m.command) m.command(program);
