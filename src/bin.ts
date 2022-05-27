@@ -7,11 +7,8 @@ import { resolve } from 'path';
 import { clean } from './clean';
 import { Log } from './Log';
 import { build } from './build';
-import { modulesDir } from '.';
-import { readdir } from 'fs/promises';
-import { join } from './join';
 import { ls } from './ls';
-import { isPluginInstalled } from './isPluginInstalled';
+import { execSync } from 'child_process';
 
 (async () => {
   const program = new Command();
@@ -61,30 +58,33 @@ import { isPluginInstalled } from './isPluginInstalled';
       ls(m);
     });
 
-  const md = modulesDir();
-  const dirs = await readdir(md);
-  const pluginsDirname = '@smake-plugins';
+  const npm = process.env.SMAKE_NPM || 'npm';
+  const json = JSON.parse(
+    execSync(`${npm} ls -g --json`, { env: process.env }).toString()
+  );
+  const deps: Array<{
+    [k: string]: {
+      version: string;
+    };
+  }> = (Array.isArray(json) ? json : [json]).map((x) => x.dependencies);
   const plugins: Array<{
     name: string;
     version: string;
   }> = [];
-  if (dirs.includes(pluginsDirname)) {
-    const pdirs = await readdir(join(md, pluginsDirname));
-    for (const p of pdirs) {
-      const pp = join(pluginsDirname, p);
-      if (isPluginInstalled(pp))
+
+  for (const dep of deps) {
+    for (const [name, v] of Object.entries(dep))
+      if (
+        name.startsWith('@smake-plugins/') ||
+        name.startsWith('smake-plugin-')
+      )
         plugins.push({
-          name: pp,
-          version: require(join(md, pp, 'package.json')).version,
+          name,
+          version: v.version,
         });
-    }
   }
-  for (const p of dirs.filter((d) => d.startsWith('smake-plugin-')))
-    if (isPluginInstalled(p))
-      plugins.push({
-        name: p,
-        version: require(join(md, p, 'package.json')).version,
-      });
+  plugins.sort();
+
   for (const p of plugins) {
     const m = require(p.name);
     if (m.command) m.command(program);
